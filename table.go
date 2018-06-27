@@ -82,7 +82,6 @@ func (t Table) Create(obj Dataer) (record Recorder, err error) {
 
 		record = NewRecord(t.name, nxtID, obj)
 		meta := record.Meta()
-
 		err = write(meta.FileName, record.Data())
 
 		if err == nil {
