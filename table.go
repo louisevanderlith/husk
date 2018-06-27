@@ -35,7 +35,7 @@ func NewTable(obj Dataer) Table {
 func (t Table) FindByID(id int64) (Recorder, error) {
 	var result Recorder
 	meta := t.index.getAt(id)
-	fmt.Println(meta)
+
 	if meta == nil {
 		msg := fmt.Sprintf("ID %v not found in table %s", id, t.name)
 
@@ -73,26 +73,36 @@ func (t Table) Find(page, pageSize int, filter Filter) []Recorder {
 	return result
 }
 
-func (t Table) Create(obj Dataer) (Recorder, error) {
-	nxtID := t.index.nextID()
-	fmt.Println("nxtID:", nxtID)
-	record := NewRecord(t.name, nxtID, obj)
-	meta := record.Meta()
+func (t Table) Create(obj Dataer) (record Recorder, err error) {
+	var valid bool
+	valid, err = obj.Valid()
 
-	err := write(meta.FileName, record.Data())
+	if valid {
+		nxtID := t.index.nextID()
 
-	if err == nil {
-		t.index.addMeta(meta)
-		t.index.dump(t.name)
+		record = NewRecord(t.name, nxtID, obj)
+		meta := record.Meta()
+
+		err = write(meta.FileName, record.Data())
+
+		if err == nil {
+			t.index.addMeta(meta)
+			t.index.dump(t.name)
+		}
 	}
 
 	return record, err
 }
 
 func (t Table) Update(record Recorder) error {
-	meta := record.Meta()
+	valid, err := record.Data().Valid()
 
-	return write(meta.FileName, record.Data())
+	if valid {
+		meta := record.Meta()
+		err = write(meta.FileName, record.Data())
+	}
+
+	return err
 }
 
 func (t Table) Delete(id int64) error {
