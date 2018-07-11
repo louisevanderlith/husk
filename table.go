@@ -73,6 +73,24 @@ func (t Table) Find(page, pageSize int, filter Filter) []Recorder {
 	return result
 }
 
+func (t Table) FindFirst(filter Filter) Recorder {
+	var result Recorder
+
+	res := t.Find(1, 1, filter)
+
+	if len(res) == 1 {
+		result = res[0]
+	}
+
+	return result
+}
+
+func (t Table) Exists(filter Filter) bool {
+	res := t.Find(1, 1, filter)
+
+	return len(res) == 1
+}
+
 func (t Table) Create(obj Dataer) (record Recorder, err error) {
 	var valid bool
 	valid, err = obj.Valid()
@@ -99,6 +117,11 @@ func (t Table) Update(record Recorder) error {
 	if valid {
 		meta := record.Meta()
 		err = write(meta.FileName, record.Data())
+
+		if err == nil {
+			meta.Updated()
+			t.index.dump(t.name)
+		}
 	}
 
 	return err

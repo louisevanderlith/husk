@@ -26,7 +26,7 @@ func DestroyData() {
 func TestCreate_MustPersist(t *testing.T) {
 	//defer DestroyData()
 
-	p := sample.Person{"Jan", 25}
+	p := sample.Person{Name: "Jan", Age: 25}
 
 	record, err := ctx.People.Create(&p)
 
@@ -48,9 +48,9 @@ func TestCreate_MustPersist(t *testing.T) {
 func TestCreate_MultipleEntries_MustPersist(t *testing.T) {
 	defer DestroyData()
 
-	p := sample.Person{"Johan", 13}
-	p1 := sample.Person{"Sarel", 15}
-	p2 := sample.Person{"Jaco", 24}
+	p := sample.Person{Name: "Johan", Age: 13}
+	p1 := sample.Person{Name: "Sarel", Age: 15}
+	p2 := sample.Person{Name: "Jaco", Age: 24}
 
 	ctx.People.Create(p)
 	ctx.People.Create(p1)
@@ -70,7 +70,7 @@ func TestCreate_MultipleEntries_MustPersist(t *testing.T) {
 func TestUpdate_MustPersist(t *testing.T) {
 	defer DestroyData()
 
-	p := sample.Person{"Sarie", 45}
+	p := sample.Person{Name: "Sarie", Age: 45}
 
 	record, err := ctx.People.Create(&p)
 
@@ -100,10 +100,45 @@ func TestUpdate_MustPersist(t *testing.T) {
 	}
 }
 
+func TestUpdate_LastUpdatedMustChange(t *testing.T) {
+	defer DestroyData()
+
+	p := sample.Person{Name: "Sarie", Age: 45}
+
+	record, err := ctx.People.Create(&p)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	firstUpdate := record.Meta().LastUpdated
+
+	pData := record.Data().(*sample.Person)
+	pData.Age = 67
+
+	err = ctx.People.Update(record)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	againP, ferr := ctx.People.FindByID(record.GetID())
+
+	if ferr != nil {
+		t.Error(ferr)
+	}
+
+	againMeta := againP.Meta()
+
+	if againMeta.LastUpdated == firstUpdate {
+		t.Errorf("Expected %v, got %v", firstUpdate, againMeta.LastUpdated)
+	}
+}
+
 func TestDelete_MustPersist(t *testing.T) {
 	defer DestroyData()
 
-	p := sample.Person{"DeleteMe", 67}
+	p := sample.Person{Name: "DeleteMe", Age: 67}
 
 	record, err := ctx.People.Create(p)
 
@@ -128,9 +163,9 @@ func TestDelete_MustPersist(t *testing.T) {
 func TestFind_FindFilteredItems(t *testing.T) {
 	defer DestroyData()
 
-	p := sample.Person{"Johan", 13}
-	p1 := sample.Person{"Sarel", 15}
-	p2 := sample.Person{"Jaco", 24}
+	p := sample.Person{Name: "Johan", Age: 13}
+	p1 := sample.Person{Name: "Sarel", Age: 15}
+	p2 := sample.Person{Name: "Jaco", Age: 24}
 
 	ctx.People.Create(p)
 	rec, _ := ctx.People.Create(p1)
@@ -148,5 +183,23 @@ func TestFind_FindFilteredItems(t *testing.T) {
 
 	if firstID != rec.GetID() {
 		t.Errorf("Wrong ID, Expected %v, got %v", rec.GetID(), firstID)
+	}
+}
+
+// Eish
+func TestCreateRelated_MustBePresentInRelatedObject(t *testing.T) {
+	//defer DestroyData()
+
+	p := sample.Person{Name: "Somebody", Age: 13}
+	acc := sample.Account{"ABC123", &p}
+
+	ps, _ := ctx.People.Create(&p)
+	ctx.Accounts.Create(&acc)
+
+	result, _ := ctx.People.FindByID(ps.GetID())
+	pdata := result.Data().(*sample.Person)
+
+	if len(pdata.Accounts) != 1 {
+		t.Error("No accounts found for person")
 	}
 }
