@@ -17,7 +17,7 @@ func init() {
 	ensureDbDirectory()
 }
 
-func NewTable(obj Dataer) Table {
+func NewTable(obj Dataer) Tabler {
 	t := reflect.TypeOf(obj).Elem()
 	name := t.Name()
 	path := getIndexName(name)
