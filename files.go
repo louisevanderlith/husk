@@ -32,7 +32,7 @@ func getIndexName(tableName string) string {
 func cleanTableName(indexName string) string {
 	var result string
 
-	result = strings.Replace(indexName, ".index.hsk", "", 1)
+	result = strings.Replace(indexName, ".index.husk", "", 1)
 
 	return result
 }

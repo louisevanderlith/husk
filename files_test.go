@@ -2,6 +2,10 @@ package husk
 
 import "testing"
 
+func Benchmark_GetTime(b *testing.B) {
+	getRecordName("Person", 9)
+}
+
 func TestGetRecordName_Correct(t *testing.T) {
 	expected := "./db/Person.9.husk"
 	actual := getRecordName("Person", 9)
