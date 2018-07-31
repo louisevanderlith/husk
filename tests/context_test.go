@@ -171,15 +171,15 @@ func TestFind_FindFilteredItems(t *testing.T) {
 	rec, _ := ctx.People.Create(p1)
 	ctx.People.Create(p2)
 
-	results := ctx.People.Find(1, 1, func(obj husk.Dataer) bool {
+	result, err := ctx.People.FindFirst(func(obj husk.Dataer) bool {
 		return obj.(*sample.Person).Name == "Sarel"
 	})
 
-	if len(results) != 1 {
-		t.Errorf("Expected %v, got %v", 1, len(results))
+	if err != nil {
+		t.Error(err)
 	}
 
-	firstID := results[0].GetID()
+	firstID := result.GetID()
 
 	if firstID != rec.GetID() {
 		t.Errorf("Wrong ID, Expected %v, got %v", rec.GetID(), firstID)

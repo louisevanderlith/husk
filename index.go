@@ -1,5 +1,7 @@
 package husk
 
+import "fmt"
+
 type Index map[int64]*meta
 
 func LoadIndex(indexName string) *Index {
@@ -37,6 +39,7 @@ func (m *Index) getAt(id int64) *meta {
 }
 
 func (m *Index) addMeta(obj *meta) {
+	fmt.Println(obj.FileName)
 	id := obj.ID
 	(*m)[id] = obj
 }

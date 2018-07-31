@@ -52,8 +52,9 @@ func (t Table) FindByID(id int64) (Recorder, error) {
 	return result, err
 }
 
-func (t Table) Find(page, pageSize int, filter Filter) []Recorder {
-	var result []Recorder
+func (t Table) Find(page, pageSize int, filter Filter) Enumerator {
+	var items []Recorder
+
 	skipCount := (page - 1) * pageSize
 
 	for _, v := range *t.index {
@@ -61,34 +62,33 @@ func (t Table) Find(page, pageSize int, filter Filter) []Recorder {
 		err := read(v.FileName, dataObj)
 
 		if err == nil && filter(dataObj) {
-			if skipCount == 0 && len(result) < pageSize {
+			if skipCount == 0 && len(items) < pageSize {
 				record := MakeRecord(v, dataObj)
-				result = append(result, record)
+				items = append(items, record)
 			} else {
 				skipCount--
 			}
 		}
 	}
 
-	return result
+	return newEnumerable(items)
 }
 
-func (t Table) FindFirst(filter Filter) Recorder {
-	var result Recorder
-
+func (t Table) FindFirst(filter Filter) (Recorder, error) {
 	res := t.Find(1, 1, filter)
 
-	if len(res) == 1 {
-		result = res[0]
+	return res.Next()
+}
+
+func (t Table) Exists(filter Filter) (bool, error) {
+	item, err := t.FindFirst(filter)
+	found := item != nil
+
+	if err != nil {
+		return true, err
 	}
 
-	return result
-}
-
-func (t Table) Exists(filter Filter) bool {
-	res := t.Find(1, 1, filter)
-
-	return len(res) == 1
+	return found, err
 }
 
 func (t Table) Create(obj Dataer) (record Recorder, err error) {
