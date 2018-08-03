@@ -25,7 +25,8 @@ func TestNext_ShouldReturnNext(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		name := names[i]
-		item, err := results.Next()
+		results.MoveNext()
+		item, err := results.Current()
 
 		if err != nil {
 			t.Error(err)
@@ -33,8 +34,8 @@ func TestNext_ShouldReturnNext(t *testing.T) {
 
 		per0 := item.Data().(*sample.Person)
 
-		t.Log(per0.Name, name)
+		if per0.Name != name {
+			t.Error("names didn't match")
+		}
 	}
-
-	t.Fail()
 }
