@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	dbPath       string = "./db"
-	recordPath   string = "./db/%s.%v.husk"
-	indexPath    string = "./db/%s.index.husk"
-	indexPattern string = "./db/*.index.husk"
+	dbPath       string = "db"
+	recordPath   string = "db/%s.%v.husk"
+	indexPath    string = "db/%s.index.husk"
+	indexPattern string = "db/*.index.husk"
 )
 
 func ensureDbDirectory() {

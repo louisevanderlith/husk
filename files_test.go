@@ -3,7 +3,7 @@ package husk
 import "testing"
 
 func TestGetRecordName_Correct(t *testing.T) {
-	expected := "./db/Person.9.husk"
+	expected := "db/Person.9.husk"
 	actual := getRecordName("Person", 9)
 
 	if actual != expected {
@@ -12,7 +12,7 @@ func TestGetRecordName_Correct(t *testing.T) {
 }
 
 func TestGetIndexName_Correct(t *testing.T) {
-	expected := "./db/Person.index.husk"
+	expected := "db/Person.index.husk"
 	actual := getIndexName("Person")
 
 	if actual != expected {

@@ -16,7 +16,7 @@ func init() {
 }
 
 func DestroyData() {
-	err := husk.DestroyContents("./db")
+	err := husk.DestroyContents("db")
 
 	if err != nil {
 		log.Println(err)
@@ -187,8 +187,8 @@ func TestFind_FindFilteredItems(t *testing.T) {
 }
 
 // Eish
-func TestCreateRelated_MustBePresentInRelatedObject(t *testing.T) {
-	//defer DestroyData()
+func TestCreateRdbd_MustBePresentInRelatedObject(t *testing.T) {
+	//defer Destdbta()
 
 	p := sample.Person{Name: "Somebody", Age: 13}
 	acc := sample.Account{"ABC123", &p}
