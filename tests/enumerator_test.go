@@ -23,19 +23,10 @@ func TestNext_ShouldReturnNext(t *testing.T) {
 		return true
 	})
 
-	for i := 0; i < 3; i++ {
-		name := names[i]
-		results.MoveNext()
-		item, err := results.Current()
-
-		if err != nil {
-			t.Error(err)
-		}
-
-		per0 := item.Data().(*sample.Person)
-
-		if per0.Name != name {
-			t.Error("names didn't match")
-		}
+	for results.MoveNext() {
+		curr, _ := results.Current()
+		t.Logf("%+v", curr.Data())
 	}
+
+	t.Fail()
 }

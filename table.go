@@ -32,12 +32,12 @@ func NewTable(obj Dataer) Tabler {
 	}
 }
 
-func (t Table) FindByID(id int64) (Recorder, error) {
+func (t Table) FindByKey(key Key) (Recorder, error) {
 	var result Recorder
-	meta := t.index.getAt(id)
+	meta := t.index.getAt(key)
 
 	if meta == nil {
-		msg := fmt.Sprintf("ID %v not found in table %s", id, t.name)
+		msg := fmt.Sprintf("Key %v not found in table %s", key, t.name)
 
 		return result, errors.New(msg)
 	}
@@ -57,13 +57,17 @@ func (t Table) Find(page, pageSize int, filter Filter) *RecordSet {
 
 	skipCount := (page - 1) * pageSize
 
-	for _, v := range *t.index {
+	for t.index.MoveNext() {
+		meta := t.index.Current()
+
+		// hotfields... before file scan
+
 		dataObj := resultObject(t.t)
-		err := read(v.FileName, dataObj)
+		err := read(meta.FileName, dataObj)
 
 		if err == nil && filter(dataObj) {
 			if skipCount == 0 && result.Count() < pageSize {
-				record := MakeRecord(v, dataObj)
+				record := MakeRecord(meta, dataObj)
 				result.Add(record)
 			} else {
 				skipCount--
@@ -100,9 +104,9 @@ func (t Table) Create(obj Dataer) (record Recorder, err error) {
 	valid, err = obj.Valid()
 
 	if valid {
-		nxtID := t.index.nextID()
+		nxtKey := t.index.nextKey()
 
-		record = NewRecord(t.name, nxtID, obj)
+		record = NewRecord(t.name, nxtKey, obj)
 		meta := record.Meta()
 		err = write(meta.FileName, record.Data())
 
@@ -131,11 +135,11 @@ func (t Table) Update(record Recorder) error {
 	return err
 }
 
-func (t Table) Delete(id int64) error {
-	recMeta := t.index.getAt(id)
+func (t Table) Delete(key Key) error {
+	recMeta := t.index.getAt(key)
 
 	if recMeta != nil {
-		recMeta.Disable()
+		t.index.disable(recMeta)
 		t.index.dump(t.name)
 	}
 

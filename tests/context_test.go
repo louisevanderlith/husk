@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"fmt"
 	"log"
 	"testing"
 
@@ -34,7 +33,7 @@ func TestCreate_MustPersist(t *testing.T) {
 		t.Error(err)
 	}
 
-	againP, ferr := ctx.People.FindByID(record.GetID())
+	againP, ferr := ctx.People.FindByKey(record.GetKey())
 
 	if ferr != nil {
 		t.Error(ferr)
@@ -60,7 +59,7 @@ func TestCreate_MultipleEntries_MustPersist(t *testing.T) {
 		t.Error(rerr)
 	}
 
-	_, err := ctx.People.FindByID(p2Record.GetID())
+	_, err := ctx.People.FindByKey(p2Record.GetKey())
 
 	if err != nil {
 		t.Error(err)
@@ -87,7 +86,7 @@ func TestUpdate_MustPersist(t *testing.T) {
 		t.Error(err)
 	}
 
-	againP, ferr := ctx.People.FindByID(record.GetID())
+	againP, ferr := ctx.People.FindByKey(record.GetKey())
 
 	if ferr != nil {
 		t.Error(ferr)
@@ -122,7 +121,7 @@ func TestUpdate_LastUpdatedMustChange(t *testing.T) {
 		t.Error(err)
 	}
 
-	againP, ferr := ctx.People.FindByID(record.GetID())
+	againP, ferr := ctx.People.FindByKey(record.GetKey())
 
 	if ferr != nil {
 		t.Error(ferr)
@@ -136,7 +135,7 @@ func TestUpdate_LastUpdatedMustChange(t *testing.T) {
 }
 
 func TestDelete_MustPersist(t *testing.T) {
-	defer DestroyData()
+	//defer DestroyData()
 
 	p := sample.Person{Name: "DeleteMe", Age: 67}
 
@@ -146,17 +145,16 @@ func TestDelete_MustPersist(t *testing.T) {
 		t.Error(err)
 	}
 
-	err = ctx.People.Delete(record.GetID())
+	err = ctx.People.Delete(record.GetKey())
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	_, rerr := ctx.People.FindByID(record.GetID())
-	expectedErr := fmt.Sprintf("ID %v not found in table Person", record.GetID())
+	_, rerr := ctx.People.FindByKey(record.GetKey())
 
-	if rerr.Error() != expectedErr {
-		t.Error("Expected item to be deleted.")
+	if rerr == nil {
+		t.Error("Expected item to be deleted. 'Not found error...'")
 	}
 }
 
@@ -179,27 +177,9 @@ func TestFind_FindFilteredItems(t *testing.T) {
 		t.Error(err)
 	}
 
-	firstID := result.GetID()
+	firstID := result.GetKey()
 
-	if firstID != rec.GetID() {
-		t.Errorf("Wrong ID, Expected %v, got %v", rec.GetID(), firstID)
-	}
-}
-
-// Eish
-func TestCreateRdbd_MustBePresentInRelatedObject(t *testing.T) {
-	//defer Destdbta()
-
-	p := sample.Person{Name: "Somebody", Age: 13}
-	acc := sample.Account{"ABC123", &p}
-
-	ps, _ := ctx.People.Create(&p)
-	ctx.Accounts.Create(&acc)
-
-	result, _ := ctx.People.FindByID(ps.GetID())
-	pdata := result.Data().(*sample.Person)
-
-	if len(pdata.Accounts) != 1 {
-		t.Error("No accounts found for person")
+	if firstID != rec.GetKey() {
+		t.Errorf("Wrong ID, Expected %v, got %v", rec.GetKey(), firstID)
 	}
 }

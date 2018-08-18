@@ -21,8 +21,8 @@ func ensureDbDirectory() {
 	}
 }
 
-func getRecordName(tableName string, id int64) string {
-	return fmt.Sprintf(recordPath, tableName, id)
+func getRecordName(tableName string, key Key) string {
+	return fmt.Sprintf(recordPath, tableName, key)
 }
 
 func getIndexName(tableName string) string {

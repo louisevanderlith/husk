@@ -46,7 +46,7 @@ func (s *RecordSet) Current() (Recorder, error) {
 func (s *RecordSet) MoveNext() bool {
 	s.index++
 
-	return s.index != s.length-1
+	return s.index != s.length
 }
 
 func (s *RecordSet) Reset() {
