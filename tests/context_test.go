@@ -23,7 +23,7 @@ func DestroyData() {
 }
 
 func TestCreate_MustPersist(t *testing.T) {
-	//defer DestroyData()
+	defer DestroyData()
 
 	p := sample.Person{Name: "Jan", Age: 25}
 
@@ -135,7 +135,7 @@ func TestUpdate_LastUpdatedMustChange(t *testing.T) {
 }
 
 func TestDelete_MustPersist(t *testing.T) {
-	//defer DestroyData()
+	defer DestroyData()
 
 	p := sample.Person{Name: "DeleteMe", Age: 67}
 

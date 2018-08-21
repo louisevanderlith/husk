@@ -3,7 +3,6 @@ package husk
 import (
 	"fmt"
 	"sort"
-	"time"
 )
 
 //Index is sorted by EPOCH Time DESC
@@ -82,17 +81,16 @@ func (m *Index) getAt(key Key) *meta {
 }
 
 func (m *Index) nextKey() Key {
-	stamp := time.Now().UnixNano()
 	nxtID := int64(1)
 
 	if len(m.Keys) == 0 {
-		return Key{stamp, nxtID}
+		return NewKey(nxtID)
 	}
 
 	top := m.Keys[0]
 	nxtID += top.ID
 
-	return Key{stamp, nxtID}
+	return NewKey(nxtID)
 }
 
 func (m *Index) addMeta(obj *meta) {
@@ -116,9 +114,9 @@ func (m *Index) dump(tableName string) {
 
 func (m *Index) disable(metaRec *meta) {
 	metaRec.Disable()
-
-	kIdx := m.getKeyIndex(metaRec.Key)
-	m.Keys = append(m.Keys[:kIdx], m.Keys[kIdx+1:]...)
+	metaKey := metaRec.Key
+	idxKey := m.getKeyIndex(metaKey)
+	m.Keys = append(m.Keys[:idxKey], m.Keys[idxKey+1:]...)
 
 	fmt.Printf("disable %b :: %+v", metaRec.Active, m)
 }
