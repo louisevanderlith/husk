@@ -2,6 +2,8 @@ package husk
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -25,6 +27,23 @@ func NewKey(nextID int64) Key {
 	return Key{timestamp, nextID}
 }
 
+func ParseKey(rawKey string) Key {
+	parts := strings.Split(rawKey, "-")
+
+	if len(parts) != 2 {
+		return CrazyKey()
+	}
+
+	stamp, _ := strconv.ParseInt(parts[0], 10, 64)
+	id, _ := strconv.ParseInt(parts[1], 10, 64)
+
+	return Key{Stamp: stamp, ID: id}
+}
+
 func (k Key) String() string {
 	return fmt.Sprintf("%d-%d", k.Stamp, k.ID)
+}
+
+func (k Key) GetTimestamp() time.Time {
+	return time.Unix(k.Stamp, 0)
 }

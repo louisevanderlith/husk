@@ -104,7 +104,7 @@ func createDirectory(folderPath string) bool {
 	notExist := os.IsNotExist(err)
 
 	if notExist {
-		err = os.MkdirAll(folderPath, os.ModeDir)
+		err = os.Mkdir(folderPath, 0755)
 
 		notExist = err != nil
 	}
