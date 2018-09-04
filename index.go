@@ -2,12 +2,13 @@ package husk
 
 import (
 	"fmt"
-	"sort"
 )
+
+type metaMap map[Key]*meta
 
 //Index is sorted by EPOCH Time DESC
 type Index struct {
-	Values    map[Key]*meta
+	Values    metaMap
 	Keys      []Key
 	Hotfields map[string]interface{}
 	indx      int
@@ -15,7 +16,7 @@ type Index struct {
 
 func newIndex() *Index {
 	result := new(Index)
-	result.Values = make(map[Key]*meta)
+	result.Values = make(metaMap)
 	result.Hotfields = make(map[string]interface{})
 
 	return result
@@ -23,27 +24,6 @@ func newIndex() *Index {
 
 func (s Index) Len() int {
 	return len(s.Keys)
-}
-
-//Less
-func (s Index) Less(i, j int) bool {
-	iKey, jKey := s.Keys[i], s.Keys[j]
-
-	return isLess(iKey, jKey)
-}
-
-func isLess(iKey, jKey Key) bool {
-	stampSame := iKey.Stamp == jKey.Stamp
-
-	if !stampSame {
-		return iKey.Stamp < jKey.Stamp
-	}
-
-	return iKey.ID < jKey.ID
-}
-
-func (s Index) Swap(i, j int) {
-	s.Keys[i], s.Keys[j] = s.Keys[j], s.Keys[i]
 }
 
 func LoadIndex(indexName string) *Index {
@@ -55,7 +35,7 @@ func LoadIndex(indexName string) *Index {
 		panic(err)
 	}
 
-	result.indx = -1
+	result.Reset()
 
 	return result
 }
@@ -73,7 +53,7 @@ func (m *Index) getKeyIndex(key Key) int {
 func (m *Index) getAt(key Key) *meta {
 	meta := m.Values[key]
 
-	if meta != nil && meta.Active {
+	if meta.Active {
 		return meta
 	}
 
@@ -83,12 +63,11 @@ func (m *Index) getAt(key Key) *meta {
 func (m *Index) nextKey() Key {
 	nxtID := int64(1)
 
-	if len(m.Keys) == 0 {
+	if m.Len() == 0 {
 		return NewKey(nxtID)
 	}
 
-	top := m.Keys[0]
-	nxtID += top.ID
+	nxtID += m.Keys[0].ID
 
 	return NewKey(nxtID)
 }
@@ -97,9 +76,11 @@ func (m *Index) addMeta(obj *meta) {
 	key := obj.Key
 
 	m.Values[key] = obj
-	m.Keys = append(m.Keys, key)
+	//key in-front
+	tmp := []Key{key}
+	tmp = append(tmp, m.Keys...)
 
-	sort.Sort(m)
+	m.Keys = tmp
 }
 
 func (m *Index) dump(tableName string) {
@@ -118,19 +99,20 @@ func (m *Index) disable(metaRec *meta) {
 	idxKey := m.getKeyIndex(metaKey)
 	m.Keys = append(m.Keys[:idxKey], m.Keys[idxKey+1:]...)
 
-	fmt.Printf("disable %b :: %+v", metaRec.Active, m)
+	fmt.Printf("disable %v :: %+v", metaRec.Active, m)
 }
 
 func (m *Index) Current() *meta {
 	k := m.Keys[m.indx]
+	curr := m.Values[k]
 
-	return m.Values[k]
+	return curr
 }
 
 func (m *Index) MoveNext() bool {
-	m.indx++
+	m.indx--
 
-	if m.indx == len(m.Keys) {
+	if m.indx == 0 {
 		m.Reset()
 		return false
 	}
@@ -139,5 +121,5 @@ func (m *Index) MoveNext() bool {
 }
 
 func (m *Index) Reset() {
-	m.indx = -1
+	m.indx = m.Len()
 }

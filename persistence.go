@@ -11,9 +11,6 @@ import (
 	"strings"
 )
 
-func init() {
-	registerGobTypes()
-}
 
 func registerGobTypes() {
 	gob.Register(Index{})

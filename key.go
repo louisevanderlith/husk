@@ -15,7 +15,7 @@ type Key struct {
 // CrazyKey is a short-hand for NewKey(-1), returns old date
 func CrazyKey() Key {
 	old := time.Date(1991, 8, 2, 12, 13, 57, 000, time.UTC)
-	return Key{old.UnixNano(), int64(-1)}
+	return Key{old.Unix(), int64(-1)}
 }
 
 func NewKey(nextID int64) Key {
@@ -23,7 +23,7 @@ func NewKey(nextID int64) Key {
 		panic("rather call CrazyKey")
 	}
 
-	timestamp := time.Now().UnixNano()
+	timestamp := time.Now().Unix()
 	return Key{timestamp, nextID}
 }
 
