@@ -11,10 +11,11 @@ import (
 	"strings"
 )
 
-
 func registerGobTypes() {
 	gob.Register(Index{})
+	gob.Register(dataMap{})
 	gob.Register(meta{})
+	gob.Register(Record{})
 }
 
 func write(filePath string, data interface{}) error {

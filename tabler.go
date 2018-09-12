@@ -6,7 +6,10 @@ type Tabler interface {
 	FindFirst(filter Filter) (Recorder, error)
 	// Exists can restult in a 'true, but ...' always test for !exists
 	Exists(filter Filter) (bool, error)
-	Create(obj Dataer) (Recorder, error)
-	Update(record Recorder) error
-	Delete(key Key) error
+	Create(objs Dataer) CreateSet
+	CreateMulti(obj ...Dataer) []CreateSet
+	Update(records Recorder) error
+	Delete(keys Key) error
+	//Writes data to disk.
+	Save()
 }

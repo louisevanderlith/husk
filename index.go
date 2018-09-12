@@ -4,11 +4,11 @@ import (
 	"fmt"
 )
 
-type metaMap map[Key]*meta
+type dataMap map[Key]*meta
 
 //Index is sorted by EPOCH Time DESC
 type Index struct {
-	Values    metaMap
+	Values    dataMap
 	Keys      []Key
 	Hotfields map[string]interface{}
 	indx      int
@@ -16,7 +16,7 @@ type Index struct {
 
 func newIndex() *Index {
 	result := new(Index)
-	result.Values = make(metaMap)
+	result.Values = make(dataMap)
 	result.Hotfields = make(map[string]interface{})
 
 	return result
@@ -51,10 +51,10 @@ func (m *Index) getKeyIndex(key Key) int {
 }
 
 func (m *Index) getAt(key Key) *meta {
-	meta := m.Values[key]
+	rec := m.Values[key]
 
-	if meta.Active {
-		return meta
+	if rec.Active {
+		return rec
 	}
 
 	return nil
@@ -72,10 +72,12 @@ func (m *Index) nextKey() Key {
 	return NewKey(nxtID)
 }
 
-func (m *Index) addMeta(obj *meta) {
+//addRecord was addMeta
+func (m *Index) addRecord(obj *meta) {
 	key := obj.Key
 
 	m.Values[key] = obj
+
 	//key in-front
 	tmp := []Key{key}
 	tmp = append(tmp, m.Keys...)

@@ -2,9 +2,9 @@ package tests
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	"github.com/louisevanderlith/husk"
 	"github.com/louisevanderlith/husk/tests/sample"
@@ -15,6 +15,8 @@ var (
 	bodies    []sample.Person
 	idx       int
 	bodycount int
+	counter   int
+	startTime time.Time
 )
 
 func init() {
@@ -22,6 +24,8 @@ func init() {
 	loadBodies()
 	idx = 0
 	bodycount = len(bodies)
+	counter = 0
+	startTime = time.Now()
 }
 
 func loadBodies() {
@@ -42,18 +46,22 @@ func loadBodies() {
 }
 
 func TestInserts_SampleETL(t *testing.T) {
+	defer benchCtx.People.Save()
+	count := 0
 
-	for nxtPerson, valid := getNextPerson(); valid; nxtPerson, valid = getNextPerson() {
+	nxtPerson, _ := getNextPerson()
 
-		_, err := benchCtx.People.Create(nxtPerson)
+	for time.Since(startTime) < time.Second*20 {
+		count++
+		set := benchCtx.People.Create(nxtPerson)
 
-		if err != nil {
-			t.Error(err)
+		if set.Error != nil {
+			t.Error(set.Error)
 		}
 	}
 
-	//t.Fail()
-
+	t.Logf("Completed: %d", count)
+	t.Fail()
 }
 
 // BenchmarkInserts run a benchmark with simple objects
@@ -62,17 +70,18 @@ func BenchmarkInserts(b *testing.B) {
 	nxtPerson, valid := getNextPerson()
 
 	if valid {
-
 		benchCtx.People.Create(nxtPerson)
 	}
+
+	defer benchCtx.People.Save()
 }
 
 func BenchmarkFilter_HighBalance(b *testing.B) {
 	set := benchCtx.People.Find(1, 50, func(data husk.Dataer) bool {
 		obj := data.(*sample.Person)
-		b.Logf("%+v\n", obj)
+
 		for _, v := range obj.Accounts {
-			if v.Balance > 30000 {
+			if v.Balance > 50 {
 				return true
 			}
 		}
@@ -91,7 +100,6 @@ func getNextPerson() (*sample.Person, bool) {
 	}
 
 	result := bodies[idx]
-	fmt.Println("IDX:", idx)
 	idx++
 
 	return &result, true

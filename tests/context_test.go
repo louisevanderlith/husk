@@ -27,13 +27,13 @@ func TestCreate_MustPersist(t *testing.T) {
 
 	p := sample.Person{Name: "Jan", Age: 25}
 
-	record, err := ctx.People.Create(&p)
+	set := ctx.People.Create(&p)
 
-	if err != nil {
-		t.Error(err)
+	if set.Error != nil {
+		t.Error(set.Error)
 	}
 
-	againP, ferr := ctx.People.FindByKey(record.GetKey())
+	againP, ferr := ctx.People.FindByKey(set.Record.GetKey())
 
 	if ferr != nil {
 		t.Error(ferr)
@@ -53,13 +53,13 @@ func TestCreate_MultipleEntries_MustPersist(t *testing.T) {
 
 	ctx.People.Create(p)
 	ctx.People.Create(p1)
-	p2Record, rerr := ctx.People.Create(p2)
+	p2Set := ctx.People.Create(p2)
 
-	if rerr != nil {
-		t.Error(rerr)
+	if p2Set.Error != nil {
+		t.Error(p2Set.Error)
 	}
 
-	_, err := ctx.People.FindByKey(p2Record.GetKey())
+	_, err := ctx.People.FindByKey(p2Set.Record.GetKey())
 
 	if err != nil {
 		t.Error(err)
@@ -71,22 +71,22 @@ func TestUpdate_MustPersist(t *testing.T) {
 
 	p := sample.Person{Name: "Sarie", Age: 45}
 
-	record, err := ctx.People.Create(&p)
+	set := ctx.People.Create(&p)
 
-	if err != nil {
-		t.Error(err)
+	if set.Error != nil {
+		t.Error(set)
 	}
 
-	pData := record.Data().(*sample.Person)
+	pData := set.Record.Data().(*sample.Person)
 	pData.Age = 67
 
-	err = ctx.People.Update(record)
+	err := ctx.People.Update(set.Record)
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	againP, ferr := ctx.People.FindByKey(record.GetKey())
+	againP, ferr := ctx.People.FindByKey(set.Record.GetKey())
 
 	if ferr != nil {
 		t.Error(ferr)
@@ -104,24 +104,24 @@ func TestUpdate_LastUpdatedMustChange(t *testing.T) {
 
 	p := sample.Person{Name: "Sarie", Age: 45}
 
-	record, err := ctx.People.Create(&p)
+	set := ctx.People.Create(&p)
 
-	if err != nil {
-		t.Error(err)
+	if set.Error != nil {
+		t.Error(set.Record)
 	}
 
-	firstUpdate := record.Meta().LastUpdated
+	firstUpdate := set.Record.Meta().LastUpdated
 
-	pData := record.Data().(*sample.Person)
+	pData := set.Record.Data().(*sample.Person)
 	pData.Age = 67
 
-	err = ctx.People.Update(record)
+	err := ctx.People.Update(set.Record)
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	againP, ferr := ctx.People.FindByKey(record.GetKey())
+	againP, ferr := ctx.People.FindByKey(set.Record.GetKey())
 
 	if ferr != nil {
 		t.Error(ferr)
@@ -139,19 +139,19 @@ func TestDelete_MustPersist(t *testing.T) {
 
 	p := sample.Person{Name: "DeleteMe", Age: 67}
 
-	record, err := ctx.People.Create(p)
+	set := ctx.People.Create(p)
+
+	if set.Error != nil {
+		t.Error(set)
+	}
+
+	err := ctx.People.Delete(set.Record.GetKey())
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = ctx.People.Delete(record.GetKey())
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	_, rerr := ctx.People.FindByKey(record.GetKey())
+	_, rerr := ctx.People.FindByKey(set.Record.GetKey())
 
 	if rerr == nil {
 		t.Error("Expected item to be deleted. 'Not found error...'")
@@ -166,7 +166,7 @@ func TestFind_FindFilteredItems(t *testing.T) {
 	p2 := sample.Person{Name: "Jaco", Age: 24}
 
 	ctx.People.Create(p)
-	rec, _ := ctx.People.Create(p1)
+	set := ctx.People.Create(p1)
 	ctx.People.Create(p2)
 
 	result, err := ctx.People.FindFirst(func(obj husk.Dataer) bool {
@@ -179,7 +179,7 @@ func TestFind_FindFilteredItems(t *testing.T) {
 
 	firstID := result.GetKey()
 
-	if firstID != rec.GetKey() {
-		t.Errorf("Wrong ID, Expected %v, got %v", rec.GetKey(), firstID)
+	if firstID != set.Record.GetKey() {
+		t.Errorf("Wrong ID, Expected %v, got %v", set.Record.GetKey(), firstID)
 	}
 }

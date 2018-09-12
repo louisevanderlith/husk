@@ -7,24 +7,16 @@ import (
 type meta struct {
 	Key         Key
 	Active      bool
-	FileName    string
+	Point       *Point
 	LastUpdated time.Time
 }
 
-func NewMeta(tableName string, key Key) (result *meta) {
-	fileName := getRecordName(tableName, key)
-	created := createFile(fileName)
-
-	if created {
-		result = &meta{
-			Key:         key,
-			Active:      true,
-			FileName:    fileName,
-			LastUpdated: time.Now(),
-		}
+func NewMeta(key Key) (result *meta) {
+	return &meta{
+		Key:         key,
+		Active:      true,
+		LastUpdated: time.Now(),
 	}
-
-	return result
 }
 
 func (m *meta) Disable() {

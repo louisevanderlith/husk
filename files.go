@@ -8,7 +8,7 @@ import (
 
 const (
 	dbPath       string = "db"
-	recordPath   string = "db/%s.%v.husk"
+	dataPath     string = "db/%s.data.husk"
 	indexPath    string = "db/%s.index.husk"
 	indexPattern string = "db/*.index.husk"
 )
@@ -21,8 +21,8 @@ func ensureDbDirectory() {
 	}
 }
 
-func getRecordName(tableName string, key Key) string {
-	return fmt.Sprintf(recordPath, tableName, key)
+func getRecordName(tableName string) string {
+	return fmt.Sprintf(dataPath, tableName)
 }
 
 func getIndexName(tableName string) string {

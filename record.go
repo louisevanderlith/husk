@@ -6,7 +6,7 @@ type Record struct {
 }
 
 func NewRecord(tableName string, key Key, obj Dataer) Recorder {
-	meta := NewMeta(tableName, key)
+	meta := NewMeta(key)
 
 	return MakeRecord(meta, obj)
 }
