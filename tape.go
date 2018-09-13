@@ -29,29 +29,6 @@ func NewTape(trackname string) Taper {
 	return &tape{track, int64(0)}
 }
 
-/*
-var err error
-	indx := make(map[int]*Point)
-	written := int64(0) //total file len (when reading)
-	for i := 0; i < 5; i++ {
-		msg := fmt.Sprintf("%d \n- %d", i, i)
-		bitMsg := []byte(msg)
-		indx[i] = NewPoint(written, int64(len(bitMsg)))
-
-
-		if err != nil {
-			log.Print(err)
-		}
-
-		written += int64(len(bitMsg))
-	}
-
-	fmt.Println("DONE")
-
-	fmt.Printf("Item 3: %+v", indx[2])
-
-*/
-
 func (t *tape) Read(point *Point, result interface{}) error {
 	len := point.Len
 	byts := make([]byte, len, len)

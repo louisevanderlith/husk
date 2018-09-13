@@ -104,29 +104,6 @@ func (t Table) Exists(filter Filter) (bool, error) {
 }
 
 func (t Table) Create(obj Dataer) CreateSet {
-	set := t.CreateMulti(obj)
-
-	if len(set) == 0 {
-		return CreateSet{nil, errors.New("no records created.")}
-	}
-
-	return set[0]
-}
-
-func (t Table) CreateMulti(objs ...Dataer) []CreateSet {
-	var result []CreateSet
-
-	for _, obj := range objs {
-		set := t.createRecord(obj)
-		result = append(result, set)
-	}
-
-	t.index.dump(t.name)
-
-	return result
-}
-
-func (t Table) createRecord(obj Dataer) CreateSet {
 	valid, err := obj.Valid()
 
 	if !valid {
@@ -148,6 +125,17 @@ func (t Table) createRecord(obj Dataer) CreateSet {
 	return CreateSet{record, err}
 }
 
+func (t Table) CreateMulti(objs ...Dataer) []CreateSet {
+	var result []CreateSet
+
+	for _, obj := range objs {
+		set := t.Create(obj)
+		result = append(result, set)
+	}
+
+	return result
+}
+
 func (t Table) Update(record Recorder) error {
 	valid, err := record.Data().Valid()
 
@@ -158,7 +146,6 @@ func (t Table) Update(record Recorder) error {
 		if err == nil {
 			meta.Point = point
 			meta.Updated()
-			t.index.dump(t.name)
 		}
 	}
 
@@ -170,7 +157,6 @@ func (t Table) Delete(key Key) error {
 
 	if recMeta != nil {
 		t.index.disable(recMeta)
-		t.index.dump(t.name)
 	}
 
 	return nil
