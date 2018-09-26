@@ -112,9 +112,13 @@ func (m *Index) Current() *meta {
 }
 
 func (m *Index) MoveNext() bool {
+	if m.Len() == 0 {
+		return false
+	}
+
 	m.indx--
 
-	if m.indx == 0 {
+	if m.indx <= 0 {
 		m.Reset()
 		return false
 	}

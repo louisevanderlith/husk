@@ -1,14 +1,12 @@
 package husk
 
 import (
-	"fmt"
 	"testing"
 )
 
 func TestGetRecordName_Correct(t *testing.T) {
-	k := NewKey(9)
-	actual := getRecordName("Person", k)
-	expected := fmt.Sprintf("db/Person.%s.husk", k)
+	actual := getRecordName("Person")
+	expected := "db/Person.data.husk"
 
 	if actual != expected {
 		t.Errorf("Expected %s, got %s", expected, actual)
