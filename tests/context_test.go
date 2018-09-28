@@ -28,6 +28,7 @@ func TestCreate_MustPersist(t *testing.T) {
 	p := sample.Person{Name: "Jan", Age: 25}
 
 	set := ctx.People.Create(&p)
+	defer ctx.People.Save()
 
 	if set.Error != nil {
 		t.Error(set.Error)
@@ -169,13 +170,9 @@ func TestFind_FindFilteredItems(t *testing.T) {
 	set := ctx.People.Create(p1)
 	ctx.People.Create(p2)
 
-	result, err := ctx.People.FindFirst(func(obj husk.Dataer) bool {
+	result := ctx.People.FindFirst(func(obj husk.Dataer) bool {
 		return obj.(*sample.Person).Name == "Sarel"
 	})
-
-	if err != nil {
-		t.Error(err)
-	}
 
 	firstID := result.GetKey()
 

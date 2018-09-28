@@ -1,7 +1,5 @@
 package husk
 
-import "errors"
-
 type RecordSet struct {
 	index   int
 	length  int
@@ -35,12 +33,8 @@ func (s *RecordSet) GetEnumerator() Enumerator {
 	return s
 }
 
-func (s *RecordSet) Current() (Recorder, error) {
-	if s.index == -1 {
-		return nil, errors.New("MoveNext() has not been called")
-	}
-
-	return s.records[s.index], nil
+func (s *RecordSet) Current() Recorder {
+	return s.records[s.index]
 }
 
 func (s *RecordSet) MoveNext() bool {

@@ -24,9 +24,7 @@ func TestNext_ShouldReturnNext(t *testing.T) {
 	})
 
 	for results.MoveNext() {
-		curr, _ := results.Current()
+		curr := results.Current()
 		t.Logf("%+v", curr.Data())
 	}
-
-	t.Fail()
 }

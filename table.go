@@ -82,25 +82,20 @@ func (t Table) Find(page, pageSize int, filter Filter) *RecordSet {
 	return result
 }
 
-func (t Table) FindFirst(filter Filter) (Recorder, error) {
+func (t Table) FindFirst(filter Filter) Recorder {
 	res := t.Find(1, 1, filter)
 
 	if !res.MoveNext() {
-		return nil, errors.New("no results found")
+		return nil
 	}
 
 	return res.Current()
 }
 
-func (t Table) Exists(filter Filter) (bool, error) {
-	item, err := t.FindFirst(filter)
-	found := item != nil
+func (t Table) Exists(filter Filter) bool {
+	item := t.FindFirst(filter)
 
-	if err != nil {
-		return true, err
-	}
-
-	return found, err
+	return item != nil
 }
 
 func (t Table) Create(obj Dataer) CreateSet {
