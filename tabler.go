@@ -2,7 +2,7 @@ package husk
 
 type Tabler interface {
 	FindByKey(key Key) (Recorder, error)
-	Find(page, pageSize int, filter Filter) *RecordSet
+	Find(page, pageSize int, filter Filter) Collection
 	FindFirst(filter Filter) Recorder
 	Exists(filter Filter) bool
 	Create(objs Dataer) CreateSet

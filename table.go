@@ -56,7 +56,7 @@ func (t Table) FindByKey(key Key) (Recorder, error) {
 	return result, err
 }
 
-func (t Table) Find(page, pageSize int, filter Filter) *RecordSet {
+func (t Table) Find(page, pageSize int, filter Filter) Collection {
 	result := NewRecordSet()
 
 	skipCount := (page - 1) * pageSize
@@ -84,12 +84,12 @@ func (t Table) Find(page, pageSize int, filter Filter) *RecordSet {
 
 func (t Table) FindFirst(filter Filter) Recorder {
 	res := t.Find(1, 1, filter)
-
-	if !res.MoveNext() {
+	rator := res.GetEnumerator()
+	if !rator.MoveNext() {
 		return nil
 	}
 
-	return res.Current()
+	return rator.Current()
 }
 
 func (t Table) Exists(filter Filter) bool {
@@ -158,8 +158,8 @@ func (t Table) Delete(key Key) error {
 }
 
 func (t Table) Save() {
-	t.tape.Close()
 	t.index.dump(t.name)
+	t.tape.Close()
 }
 
 func resultObject(t reflect.Type) Dataer {

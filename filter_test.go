@@ -2,6 +2,7 @@ package husk
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 )
 
@@ -11,28 +12,17 @@ func (s aString) Valid() (bool, error) {
 	return false, errors.New("validation ran")
 }
 
-type stringFilter func(obj aString) bool
-
-func TestMakeFilter_NoError(t *testing.T) {
-	var aStringFilter stringFilter
-	aStringFilter = func(obj aString) bool {
+func TestDitto_NoError(t *testing.T) {
+	aStringFilter := func(obj aString) bool {
+		fmt.Printf("Row: %+v\n", obj)
 		return obj == "PASS"
 	}
 
-	filter, err := MakeFilter(aStringFilter)
-
-	if err != nil {
-		t.Error(err)
-	}
-
 	param := aString("NO PASS")
-	pass := filter(param)
+	pass := aStringFilter(param)
 
 	if pass {
-		t.Error("function returned true, execpectedly")
+		t.Error("function returned true, unexepectedly")
 	}
-}
-
-func TestMakeFilter_FuncOnly(t *testing.T) {
-
+	t.Fail()
 }

@@ -12,6 +12,7 @@ func TestNext_ShouldReturnNext(t *testing.T) {
 	names := []string{"Johan", "Sarel", "Jaco"}
 	p := sample.Person{Name: names[0], Age: 13}
 	ctx.People.Create(p)
+	defer ctx.People.Save()
 
 	p1 := sample.Person{Name: names[1], Age: 15}
 	ctx.People.Create(p1)
@@ -23,8 +24,9 @@ func TestNext_ShouldReturnNext(t *testing.T) {
 		return true
 	})
 
-	for results.MoveNext() {
-		curr := results.Current()
+	rator := results.GetEnumerator()
+	for rator.MoveNext() {
+		curr := rator.Current()
 		t.Logf("%+v", curr.Data())
 	}
 }

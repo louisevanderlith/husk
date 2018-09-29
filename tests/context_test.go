@@ -55,6 +55,7 @@ func TestCreate_MultipleEntries_MustPersist(t *testing.T) {
 	ctx.People.Create(p)
 	ctx.People.Create(p1)
 	p2Set := ctx.People.Create(p2)
+	defer ctx.People.Save()
 
 	if p2Set.Error != nil {
 		t.Error(p2Set.Error)
@@ -73,6 +74,7 @@ func TestUpdate_MustPersist(t *testing.T) {
 	p := sample.Person{Name: "Sarie", Age: 45}
 
 	set := ctx.People.Create(&p)
+	defer ctx.People.Save()
 
 	if set.Error != nil {
 		t.Error(set)
@@ -106,6 +108,7 @@ func TestUpdate_LastUpdatedMustChange(t *testing.T) {
 	p := sample.Person{Name: "Sarie", Age: 45}
 
 	set := ctx.People.Create(&p)
+	defer ctx.People.Save()
 
 	if set.Error != nil {
 		t.Error(set.Record)
@@ -166,13 +169,20 @@ func TestFind_FindFilteredItems(t *testing.T) {
 	p1 := sample.Person{Name: "Sarel", Age: 15}
 	p2 := sample.Person{Name: "Jaco", Age: 24}
 
-	ctx.People.Create(p)
-	set := ctx.People.Create(p1)
-	ctx.People.Create(p2)
+	ctx.People.Create(&p)
+	set := ctx.People.Create(&p1)
+	ctx.People.Create(&p2)
+	defer ctx.People.Save()
 
 	result := ctx.People.FindFirst(func(obj husk.Dataer) bool {
+		t.Logf("%+v\n", obj)
 		return obj.(*sample.Person).Name == "Sarel"
 	})
+
+	if result == nil {
+		t.Error("result is nil")
+		return
+	}
 
 	firstID := result.GetKey()
 

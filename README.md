@@ -7,6 +7,7 @@ All records are internally sorted by their creation Timestamp, and then their tr
 This combination is refered to as a Key. 
 
 Bench History (TestInserts_SampleETL):
-0.1 (One Record, One File) Write: 138rec/s
-0.2 (BigFile) Write: 509rec/s (x3.6)
-0.3 (Dump Index only on save) Write: 1463rec/s
+* 0.1 (One Record, One File) Write: 138rec/s
+* 0.2 (BigFile) Write: 509rec/s (x3.6)
+* 0.3 (Dump Index only on save) Write: 1463rec/s (x3)
+* 0.4 (Better File handling) Write: 1221rec/s (0%)

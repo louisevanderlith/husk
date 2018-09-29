@@ -47,6 +47,7 @@ func loadBodies() {
 
 func TestInserts_SampleETL(t *testing.T) {
 	defer benchCtx.People.Save()
+
 	count := 0
 
 	nxtPerson, _ := getNextPerson()
@@ -90,7 +91,7 @@ func BenchmarkFilter_HighBalance(b *testing.B) {
 	})
 
 	if set.Count() < 5 {
-		b.Errorf("%+v\n", *set)
+		b.Errorf("%+v\n", set)
 	}
 }
 

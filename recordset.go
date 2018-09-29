@@ -1,18 +1,23 @@
 package husk
 
+type Collection interface {
+	Enumerable
+	Count() int
+	Any() bool
+	Add(record Recorder)
+}
+
 type RecordSet struct {
 	index   int
 	length  int
 	records []Recorder
 }
 
-func NewRecordSet() *RecordSet {
-	result := RecordSet{
+func NewRecordSet() Collection {
+	return &RecordSet{
 		index:  -1,
 		length: 0,
 	}
-
-	return &result
 }
 
 func (s *RecordSet) Count() int {
