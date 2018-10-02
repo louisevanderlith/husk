@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/louisevanderlith/husk"
 	"github.com/louisevanderlith/husk/tests/sample"
 )
 
@@ -45,11 +44,11 @@ func loadBodies() {
 	bodies = result
 }
 
+//Warning: Inserts the same record for 20seconds.
 func TestInserts_SampleETL(t *testing.T) {
 	defer benchCtx.People.Save()
 
 	count := 0
-
 	nxtPerson, _ := getNextPerson()
 
 	for time.Since(startTime) < time.Second*20 {
@@ -78,17 +77,7 @@ func BenchmarkInserts(b *testing.B) {
 }
 
 func BenchmarkFilter_HighBalance(b *testing.B) {
-	set := benchCtx.People.Find(1, 50, func(data husk.Dataer) bool {
-		obj := data.(*sample.Person)
-
-		for _, v := range obj.Accounts {
-			if v.Balance > 50 {
-				return true
-			}
-		}
-
-		return false
-	})
+	set := benchCtx.People.Find(1, 50, sample.HigherBalance(123.50))
 
 	if set.Count() < 5 {
 		b.Errorf("%+v\n", set)

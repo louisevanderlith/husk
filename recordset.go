@@ -1,5 +1,9 @@
 package husk
 
+import (
+	"log"
+)
+
 type Collection interface {
 	Enumerable
 	Count() int
@@ -30,22 +34,27 @@ func (s *RecordSet) Any() bool {
 
 //Add adds an item to the collection. Warning! calls Reset()
 func (s *RecordSet) Add(record Recorder) {
+	s.length++
 	s.records = append(s.records, record)
-	s.Reset()
 }
 
 func (s *RecordSet) GetEnumerator() Enumerator {
+	s.Reset()
 	return s
 }
 
 func (s *RecordSet) Current() Recorder {
-	return s.records[s.index]
+	result := s.records[s.index]
+
+	log.Printf("RecordSET %+v\n", s)
+
+	return result
 }
 
 func (s *RecordSet) MoveNext() bool {
 	s.index++
-
-	return s.index != s.length
+	log.Printf("index: %d\n", s.index)
+	return s.index < s.length
 }
 
 func (s *RecordSet) Reset() {

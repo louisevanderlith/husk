@@ -1,27 +1,20 @@
 package husk
 
-type Filter func(obj Dataer) bool
+// Filterer used to filter records while searching.
+type Filterer interface {
+	// Enables a single central function to cast from husk.Dataer to *<Person>
+	Filter(obj Dataer) bool
+}
 
-// Ditto transforms your 'custom' filter into a husk.Filter
-/*func Ditto(customFilter interface{}) Filter {
-	val := transform(customFilter)
+type filter func(obj Dataer) bool
 
+func (f filter) Filter(obj Dataer) bool {
+	return f(obj)
+}
+
+// Everything, returns 'true' on all rows
+func Everything() filter {
 	return func(obj Dataer) bool {
-		params := []reflect.Value{reflect.ValueOf(obj)}
-
-		result := val.Call(params)
-
-		return result[0].Bool()
+		return true
 	}
 }
-
-func transform(customFilter interface{}) reflect.Value {
-	tpe := reflect.TypeOf(customFilter)
-
-	if tpe.Kind() != reflect.Func {
-		panic("customFilter is not a function.")
-	}
-
-	return reflect.ValueOf(customFilter)
-}
-*/

@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"log"
 	"testing"
 
 	"github.com/louisevanderlith/husk"
@@ -15,11 +14,11 @@ func init() {
 }
 
 func DestroyData() {
-	err := husk.DestroyContents("db")
+	/*err := husk.DestroyContents("db")
 
 	if err != nil {
 		log.Println(err)
-	}
+	}*/
 }
 
 func TestCreate_MustPersist(t *testing.T) {
@@ -114,7 +113,7 @@ func TestUpdate_LastUpdatedMustChange(t *testing.T) {
 		t.Error(set.Record)
 	}
 
-	firstUpdate := set.Record.Meta().LastUpdated
+	firstUpdate := set.Record.Meta().LastUpdated()
 
 	pData := set.Record.Data().(*sample.Person)
 	pData.Age = 67
@@ -133,8 +132,8 @@ func TestUpdate_LastUpdatedMustChange(t *testing.T) {
 
 	againMeta := againP.Meta()
 
-	if againMeta.LastUpdated == firstUpdate {
-		t.Errorf("Expected %v, got %v", firstUpdate, againMeta.LastUpdated)
+	if againMeta.LastUpdated() == firstUpdate {
+		t.Errorf("Expected %v, got %v", firstUpdate, againMeta.LastUpdated())
 	}
 }
 
@@ -163,7 +162,7 @@ func TestDelete_MustPersist(t *testing.T) {
 }
 
 func TestFind_FindFilteredItems(t *testing.T) {
-	defer DestroyData()
+	//defer DestroyData()
 
 	p := sample.Person{Name: "Johan", Age: 13}
 	p1 := sample.Person{Name: "Sarel", Age: 15}
@@ -172,19 +171,28 @@ func TestFind_FindFilteredItems(t *testing.T) {
 	ctx.People.Create(&p)
 	set := ctx.People.Create(&p1)
 	ctx.People.Create(&p2)
-	defer ctx.People.Save()
+	ctx.People.Save()
 
-	result := ctx.People.FindFirst(func(obj husk.Dataer) bool {
-		t.Logf("%+v\n", obj)
-		return obj.(*sample.Person).Name == "Sarel"
-	})
+	//result := ctx.People.FindFirst(sample.ByName("Sarel"))
+	result := ctx.People.Find(1, 999, husk.Everything())
 
 	if result == nil {
 		t.Error("result is nil")
 		return
 	}
 
-	firstID := result.GetKey()
+	rator := result.GetEnumerator()
+	firstID := husk.CrazyKey()
+
+	for rator.MoveNext() {
+		curr := rator.Current()
+		someone := curr.Data().(*sample.Person)
+		t.Logf("%+v\n", curr)
+
+		if someone.Name == "Sarel" {
+			firstID = curr.GetKey()
+		}
+	}
 
 	if firstID != set.Record.GetKey() {
 		t.Errorf("Wrong ID, Expected %v, got %v", set.Record.GetKey(), firstID)

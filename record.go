@@ -5,12 +5,6 @@ type Record struct {
 	data Dataer
 }
 
-func NewRecord(tableName string, key Key, obj Dataer) Recorder {
-	meta := NewMeta(key)
-
-	return MakeRecord(meta, obj)
-}
-
 func MakeRecord(meta *meta, obj Dataer) *Record {
 	result := Record{}
 	result.meta = meta
@@ -19,8 +13,8 @@ func MakeRecord(meta *meta, obj Dataer) *Record {
 	return &result
 }
 
-func (r Record) GetKey() Key {
-	return r.meta.Key
+func (r Record) GetKey() *Key {
+	return r.meta.GetKey()
 }
 
 func (r Record) Meta() *meta {

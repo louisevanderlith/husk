@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"log"
 	"reflect"
-	"sort"
 )
 
 type Table struct {
 	t     reflect.Type
 	name  string
-	index *Index
+	index Indexer
 	tape  Taper
 }
 
@@ -26,7 +25,7 @@ func NewTable(obj Dataer) Tabler {
 	trackName := getRecordName(name)
 
 	ensureTableIndex(name, path)
-	index := LoadIndex(path)
+	index := loadIndex(path)
 
 	return Table{
 		t:     t,
@@ -36,9 +35,9 @@ func NewTable(obj Dataer) Tabler {
 	}
 }
 
-func (t Table) FindByKey(key Key) (Recorder, error) {
+func (t Table) FindByKey(key *Key) (Recorder, error) {
 	var result Recorder
-	meta := t.index.getAt(key)
+	meta := t.index.Get(key)
 
 	if meta == nil {
 		msg := fmt.Sprintf("Key %v not found in table %s", key, t.name)
@@ -47,7 +46,7 @@ func (t Table) FindByKey(key Key) (Recorder, error) {
 	}
 
 	dataObj := resultObject(t.t)
-	err := t.tape.Read(meta.Point, dataObj)
+	err := t.tape.Read(meta.Point(), dataObj)
 
 	if err == nil {
 		result = MakeRecord(meta, dataObj)
@@ -56,20 +55,19 @@ func (t Table) FindByKey(key Key) (Recorder, error) {
 	return result, err
 }
 
-func (t Table) Find(page, pageSize int, filter Filter) Collection {
+func (t Table) Find(page, pageSize int, filter Filterer) Collection {
 	result := NewRecordSet()
-
 	skipCount := (page - 1) * pageSize
 
-	for t.index.MoveNext() {
-		meta := t.index.Current()
-
-		// hotfields... before file scan
-
+	for _, meta := range t.index.Items() {
 		dataObj := resultObject(t.t)
-		err := t.tape.Read(meta.Point, dataObj)
+		err := t.tape.Read(meta.Point(), dataObj)
 
-		if err == nil && filter(dataObj) {
+		if err != nil {
+			panic(err)
+		}
+
+		if filter.Filter(dataObj) {
 			if skipCount == 0 && result.Count() < pageSize {
 				record := MakeRecord(meta, dataObj)
 				result.Add(record)
@@ -82,8 +80,9 @@ func (t Table) Find(page, pageSize int, filter Filter) Collection {
 	return result
 }
 
-func (t Table) FindFirst(filter Filter) Recorder {
+func (t Table) FindFirst(filter Filterer) Recorder {
 	res := t.Find(1, 1, filter)
+
 	rator := res.GetEnumerator()
 	if !rator.MoveNext() {
 		return nil
@@ -92,7 +91,7 @@ func (t Table) FindFirst(filter Filter) Recorder {
 	return rator.Current()
 }
 
-func (t Table) Exists(filter Filter) bool {
+func (t Table) Exists(filter Filterer) bool {
 	item := t.FindFirst(filter)
 
 	return item != nil
@@ -105,17 +104,16 @@ func (t Table) Create(obj Dataer) CreateSet {
 		return CreateSet{nil, err}
 	}
 
-	nxtKey := t.index.nextKey()
+	point, err := t.tape.Write(obj)
 
-	record := NewRecord(t.name, nxtKey, obj)
-	meta := record.Meta()
-
-	point, err := t.tape.Write(record.Data())
-
-	if err == nil {
-		meta.Point = point
-		t.index.addMeta(meta)
+	if err != nil {
+		return CreateSet{nil, err}
 	}
+
+	meta := t.index.CreateSpace(point)
+	record := MakeRecord(meta, obj)
+
+	t.index.Insert(meta)
 
 	return CreateSet{record, err}
 }
@@ -139,67 +137,46 @@ func (t Table) Update(record Recorder) error {
 		point, err := t.tape.Write(record.Data())
 
 		if err == nil {
-			meta.Point = point
-			meta.Updated()
+			meta.Updated(point)
 		}
 	}
 
 	return err
 }
 
-func (t Table) Delete(key Key) error {
-	recMeta := t.index.getAt(key)
+func (t Table) Delete(key *Key) error {
+	deleted := t.index.Delete(key)
 
-	if recMeta != nil {
-		t.index.disable(recMeta)
+	if !deleted {
+		return errors.New("nothing deleted")
 	}
 
 	return nil
 }
 
 func (t Table) Save() {
-	t.index.dump(t.name)
-	t.tape.Close()
+	//t.index.dump(t.name)
+	//t.tape.Close()
+
+	indexName := getIndexName(t.name)
+
+	err := write(indexName, t.index)
+
+	if err != nil {
+		panic(err)
+	}
 }
 
 func resultObject(t reflect.Type) Dataer {
 	return reflect.New(t).Interface().(Dataer)
 }
 
-func ensureTableIndex(tableName, indexName string) {
+func ensureTableIndex(tableName, indexName string) bool {
 	created := createFile(indexName)
 
 	if !created {
 		log.Println("couldn't create index for " + tableName)
 	}
-}
 
-func (m *Index) addMeta(obj *meta) {
-	key := obj.Key
-
-	m.Values[key] = obj
-	m.Keys = append(m.Keys, key)
-
-	sort.Sort(m)
-}
-
-//Less
-func (s Index) Less(i, j int) bool {
-	iKey, jKey := s.Keys[i], s.Keys[j]
-
-	return isLess(iKey, jKey)
-}
-
-func isLess(iKey, jKey Key) bool {
-	stampSame := iKey.Stamp == jKey.Stamp
-
-	if !stampSame {
-		return iKey.Stamp < jKey.Stamp
-	}
-
-	return iKey.ID < jKey.ID
-}
-
-func (s Index) Swap(i, j int) {
-	s.Keys[i], s.Keys[j] = s.Keys[j], s.Keys[i]
+	return created
 }

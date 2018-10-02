@@ -2,130 +2,103 @@ package husk
 
 import (
 	"fmt"
+	"math"
 )
 
-type dataMap map[Key]*meta
-
 //Index is sorted by EPOCH Time DESC
-type Index struct {
-	Values    dataMap
-	Keys      []Key
-	Hotfields map[string]interface{}
-	indx      int
+type index struct {
+	Values map[*Key]*meta
+	Keys   []*Key
+	Indx   int
+	Total  int64
 }
 
-func newIndex() *Index {
-	result := new(Index)
-	result.Values = make(dataMap)
-	result.Hotfields = make(map[string]interface{})
-
-	return result
-}
-
-func (s Index) Len() int {
-	return len(s.Keys)
-}
-
-func LoadIndex(indexName string) *Index {
-	result := newIndex()
-
+func loadIndex(indexName string) Indexer {
+	result := &index{Values: make(map[*Key]*meta)}
 	err := read(indexName, result)
 
 	if err != nil {
 		panic(err)
 	}
 
-	result.Reset()
-
 	return result
 }
 
-func (m *Index) getKeyIndex(key Key) int {
-	for i, v := range m.Keys {
-		if v == key {
-			return i
-		}
-	}
+// CreateSpaces generates a new Key and returns Meta
+func (m *index) CreateSpace(point *Point) *meta {
+	key := NewKey(m.Total)
 
-	return -1
+	return NewMeta(key, point)
 }
 
-func (m *Index) getAt(key Key) *meta {
-	rec := m.Values[key]
-
-	if rec.Active {
-		return rec
-	}
-
-	return nil
-}
-
-func (m *Index) nextKey() Key {
-	nxtID := int64(1)
-
-	if m.Len() == 0 {
-		return NewKey(nxtID)
-	}
-
-	nxtID += m.Keys[0].ID
-
-	return NewKey(nxtID)
-}
-
-//addRecord was addMeta
-func (m *Index) addRecord(obj *meta) {
-	key := obj.Key
-
-	m.Values[key] = obj
+/// Create new entry in this index that maps key K to value V
+func (m *index) Insert(v *meta) {
+	m.Values[v.GetKey()] = v
 
 	//key in-front
-	tmp := []Key{key}
-	tmp = append(tmp, m.Keys...)
+	tmp := []*Key{v.GetKey()}
+	m.Keys = append(tmp, m.Keys...)
 
-	m.Keys = tmp
+	m.Total++
 }
 
-func (m *Index) dump(tableName string) {
-	indexName := getIndexName(tableName)
+/// Find an entry by key, returns nil of not found or not active
+func (m *index) Get(k *Key) *meta {
+	rec, ok := m.Values[k]
 
-	err := write(indexName, m)
-
-	if err != nil {
-		panic(err)
+	if !ok {
+		return nil
 	}
+
+	if !rec.IsActive() {
+		return nil
+	}
+
+	return rec
 }
 
-func (m *Index) disable(metaRec *meta) {
-	metaRec.Disable()
-	metaKey := metaRec.Key
-	idxKey := m.getKeyIndex(metaKey)
+/// Delete all entries of given key
+func (m *index) Delete(k *Key) bool {
+	idxKey := m.getKeyIndex(k)
+
+	if idxKey == -1 {
+		return false
+	}
+
+	//disable meta
+	m.Values[k].Disable()
+
 	m.Keys = append(m.Keys[:idxKey], m.Keys[idxKey+1:]...)
+	fmt.Printf("disable %v :: %+v", k, m)
 
-	fmt.Printf("disable %v :: %+v", metaRec.Active, m)
-}
-
-func (m *Index) Current() *meta {
-	k := m.Keys[m.indx]
-	curr := m.Values[k]
-
-	return curr
-}
-
-func (m *Index) MoveNext() bool {
-	if m.Len() == 0 {
-		return false
-	}
-
-	m.indx--
-
-	if m.indx <= 0 {
-		m.Reset()
-		return false
-	}
-
+	m.Total--
 	return true
 }
 
-func (m *Index) Reset() {
-	m.indx = m.Len()
+func (m *index) Items() map[*Key]*meta {
+	return m.Values
+}
+
+func (m *index) getKeyIndex(key *Key) int {
+	lft := int64(0)
+	rght := m.Total - int64(1)
+
+	for lft != rght {
+		middle := int64(math.Ceil(float64((lft + rght) / 2)))
+		curr := m.Keys[middle]
+
+		//1 == greater than
+		if curr.Compare(key) == 1 {
+			rght = middle - 1
+			continue
+		}
+
+		lft = middle
+	}
+
+	if m.Keys[lft] == key {
+		return int(lft)
+	}
+
+	return -1
 }
