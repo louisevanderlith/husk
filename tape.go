@@ -66,8 +66,8 @@ func (t *tape) Write(obj interface{}) (*Point, error) {
 	}
 
 	written := int64(wrote)
-	t.offset += int64(written)
-	result.Len = written
+	t.offset += written
+	result.Len = int64(len(byts))
 
 	return result, nil
 }

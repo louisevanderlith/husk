@@ -18,10 +18,6 @@ func init() {
 func registerGobTypes() {
 	gob.Register(index{})
 	gob.Register(meta{})
-	//gob.Register(Key{})
-	//gob.Register(Point{})
-	//gob.Register(map[Key]Meta{})
-	//gob.Register(Record{})
 }
 
 func write(filePath string, data interface{}) error {

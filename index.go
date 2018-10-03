@@ -76,7 +76,15 @@ func (m *index) Delete(k *Key) bool {
 }
 
 func (m *index) Items() map[*Key]*meta {
-	return m.Values
+	result := make(map[*Key]*meta)
+
+	for k, meta := range m.Values {
+		if meta.Active {
+			result[k] = meta
+		}
+	}
+
+	return result
 }
 
 func (m *index) getKeyIndex(key *Key) int {

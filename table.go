@@ -155,9 +155,6 @@ func (t Table) Delete(key *Key) error {
 }
 
 func (t Table) Save() {
-	//t.index.dump(t.name)
-	//t.tape.Close()
-
 	indexName := getIndexName(t.name)
 
 	err := write(indexName, t.index)
