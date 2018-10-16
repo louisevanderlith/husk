@@ -33,10 +33,11 @@ func ValidateStruct(obj interface{}) (bool, error) {
 	var issues []string
 
 	val := reflect.ValueOf(obj).Elem()
+	valType := val.Type()
 
 	for i := 0; i < val.NumField(); i++ {
 		valueField := val.Field(i)
-		typeField := val.Type().Field(i)
+		typeField := valType.Field(i)
 		tag := typeField.Tag.Get("hsk")
 
 		kind := valueField.Kind()
