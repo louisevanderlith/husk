@@ -13,6 +13,10 @@ Bench History (TestInserts_SampleETL):
 * 0.4 (Better File handling) Write: 1221rec/s (0%)
 * 0.5 (Index Refactor, keys are Ptrs, improved read) Write: 2315rec/s (x2)
 
+--MAC 3167rec/s
+--WINDOWS
+--LINUX
+
 # Database Engine
 * Data-orientation and clustering
 Everything related to an object will always remain nested within that object. 
