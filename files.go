@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	dbPath       string = "./db"
-	recordPath   string = "./db/%s.%v.husk"
-	indexPath    string = "./db/%s.index.husk"
-	indexPattern string = "./db/*.index.husk"
+	dbPath       string = "db"
+	dataPath     string = "db/%s.data.husk"
+	indexPath    string = "db/%s.index.husk"
+	indexPattern string = "db/*.index.husk"
 )
 
 func ensureDbDirectory() {
@@ -21,8 +21,8 @@ func ensureDbDirectory() {
 	}
 }
 
-func getRecordName(tableName string, id int64) string {
-	return fmt.Sprintf(recordPath, tableName, id)
+func getRecordName(tableName string) string {
+	return fmt.Sprintf(dataPath, tableName)
 }
 
 func getIndexName(tableName string) string {
@@ -32,7 +32,7 @@ func getIndexName(tableName string) string {
 func cleanTableName(indexName string) string {
 	var result string
 
-	result = strings.Replace(indexName, ".index.hsk", "", 1)
+	result = strings.Replace(indexName, ".index.husk", "", 1)
 
 	return result
 }

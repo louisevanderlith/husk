@@ -1,11 +1,15 @@
 package husk
 
 type Tabler interface {
-	FindByID(id int64) (Recorder, error)
-	Find(page, pageSize int, filter Filter) []Recorder
-	FindFirst(filter Filter) Recorder
-	Exists(filter Filter) bool
-	Create(obj Dataer) (Recorder, error)
-	Update(record Recorder) error
-	Delete(id int64) error
+	FindByKey(key *Key) (Recorder, error)
+	Find(page, pageSize int, filter Filterer) Collection
+	FindFirst(filter Filterer) Recorder
+	Exists(filter Filterer) bool
+	Create(objs Dataer) CreateSet
+	CreateMulti(obj ...Dataer) []CreateSet
+	Update(records Recorder) error
+	Delete(keys *Key) error
+
+	//Writes data to disk.
+	Save()
 }

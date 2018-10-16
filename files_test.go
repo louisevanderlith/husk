@@ -1,10 +1,12 @@
 package husk
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestGetRecordName_Correct(t *testing.T) {
-	expected := "./db/Person.9.husk"
-	actual := getRecordName("Person", 9)
+	actual := getRecordName("Person")
+	expected := "db/Person.data.husk"
 
 	if actual != expected {
 		t.Errorf("Expected %s, got %s", expected, actual)
@@ -12,7 +14,7 @@ func TestGetRecordName_Correct(t *testing.T) {
 }
 
 func TestGetIndexName_Correct(t *testing.T) {
-	expected := "./db/Person.index.husk"
+	expected := "db/Person.index.husk"
 	actual := getIndexName("Person")
 
 	if actual != expected {

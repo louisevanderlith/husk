@@ -5,34 +5,42 @@ import (
 )
 
 type meta struct {
-	ID          int64
-	Active      bool
-	CreateDate  time.Time
-	FileName    string
-	LastUpdated time.Time
+	Key     *Key
+	Active  bool
+	Pointer *Point
+	Changed time.Time
 }
 
-func NewMeta(tableName string, id int64) (result *meta) {
-	fileName := getRecordName(tableName, id)
-	created := createFile(fileName)
-
-	if created {
-		result = &meta{
-			ID:          id,
-			Active:      true,
-			CreateDate:  time.Now(),
-			FileName:    fileName,
-			LastUpdated: time.Now(),
-		}
+func NewMeta(key *Key, point *Point) *meta {
+	return &meta{
+		Key:     key,
+		Active:  true,
+		Pointer: point,
+		Changed: time.Now(),
 	}
-
-	return result
 }
 
 func (m *meta) Disable() {
 	m.Active = false
 }
 
-func (m *meta) Updated() {
-	m.LastUpdated = time.Now()
+func (m *meta) Updated(p *Point) {
+	m.Pointer = p
+	m.Changed = time.Now()
+}
+
+func (m *meta) GetKey() *Key {
+	return m.Key
+}
+
+func (m *meta) IsActive() bool {
+	return m.Active
+}
+
+func (m *meta) Point() *Point {
+	return m.Pointer
+}
+
+func (m *meta) LastUpdated() time.Time {
+	return m.Changed
 }

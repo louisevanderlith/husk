@@ -1,52 +1,112 @@
 package husk
 
-type Index map[int64]*meta
+import (
+	"fmt"
+	"math"
+)
 
-func LoadIndex(indexName string) *Index {
-	result := make(Index)
+//Index is sorted by EPOCH Time DESC
+type index struct {
+	Values map[*Key]*meta
+	Keys   []*Key
+	Indx   int
+	Total  int64
+}
 
-	err := read(indexName, &result)
+func loadIndex(indexName string) Indexer {
+	result := &index{Values: make(map[*Key]*meta)}
+	err := read(indexName, result)
 
 	if err != nil {
 		panic(err)
 	}
 
-	return &result
+	return result
 }
 
-func (m *Index) nextID() int64 {
-	var result int64
+// CreateSpaces generates a new Key and returns Meta
+func (m *index) CreateSpace(point *Point) *meta {
+	key := NewKey(m.Total)
 
-	for k := range *m {
-		if result < k {
-			result = k
+	return NewMeta(key, point)
+}
+
+/// Create new entry in this index that maps key K to value V
+func (m *index) Insert(v *meta) {
+	m.Values[v.GetKey()] = v
+
+	//key in-front
+	tmp := []*Key{v.GetKey()}
+	m.Keys = append(tmp, m.Keys...)
+
+	m.Total++
+}
+
+/// Find an entry by key, returns nil of not found or not active
+func (m *index) Get(k *Key) *meta {
+	rec, ok := m.Values[k]
+
+	if !ok {
+		return nil
+	}
+
+	if !rec.IsActive() {
+		return nil
+	}
+
+	return rec
+}
+
+/// Delete all entries of given key
+func (m *index) Delete(k *Key) bool {
+	idxKey := m.getKeyIndex(k)
+
+	if idxKey == -1 {
+		return false
+	}
+
+	//disable meta
+	m.Values[k].Disable()
+
+	m.Keys = append(m.Keys[:idxKey], m.Keys[idxKey+1:]...)
+	fmt.Printf("disable %v :: %+v", k, m)
+
+	m.Total--
+	return true
+}
+
+func (m *index) Items() map[*Key]*meta {
+	result := make(map[*Key]*meta)
+
+	for k, meta := range m.Values {
+		if meta.Active {
+			result[k] = meta
 		}
 	}
 
-	return result + 1
+	return result
 }
 
-func (m *Index) getAt(id int64) *meta {
-	meta := (*m)[id]
+func (m *index) getKeyIndex(key *Key) int {
+	lft := int64(0)
+	rght := m.Total - int64(1)
 
-	if meta != nil && meta.Active {
-		return meta
+	for lft != rght {
+		middle := int64(math.Ceil(float64((lft + rght) / 2)))
+		curr := m.Keys[middle]
+
+		//1 == greater than
+		if curr.Compare(key) == 1 {
+			rght = middle - 1
+			continue
+		}
+
+		lft = middle
 	}
 
-	return nil
-}
-
-func (m *Index) addMeta(obj *meta) {
-	id := obj.ID
-	(*m)[id] = obj
-}
-
-func (m *Index) dump(tableName string) {
-	indexName := getIndexName(tableName)
-
-	err := write(indexName, m)
-
-	if err != nil {
-		panic(err)
+	if m.Keys[lft] == key {
+		return int(lft)
 	}
+
+	return -1
 }

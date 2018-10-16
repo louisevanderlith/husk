@@ -1,8 +1,6 @@
 package tests
 
 import (
-	"fmt"
-	"log"
 	"testing"
 
 	"github.com/louisevanderlith/husk"
@@ -16,25 +14,26 @@ func init() {
 }
 
 func DestroyData() {
-	err := husk.DestroyContents("./db")
+	/*err := husk.DestroyContents("db")
 
 	if err != nil {
 		log.Println(err)
-	}
+	}*/
 }
 
 func TestCreate_MustPersist(t *testing.T) {
-	//defer DestroyData()
+	defer DestroyData()
 
 	p := sample.Person{Name: "Jan", Age: 25}
 
-	record, err := ctx.People.Create(&p)
+	set := ctx.People.Create(&p)
+	defer ctx.People.Save()
 
-	if err != nil {
-		t.Error(err)
+	if set.Error != nil {
+		t.Error(set.Error)
 	}
 
-	againP, ferr := ctx.People.FindByID(record.GetID())
+	againP, ferr := ctx.People.FindByKey(set.Record.GetKey())
 
 	if ferr != nil {
 		t.Error(ferr)
@@ -54,13 +53,14 @@ func TestCreate_MultipleEntries_MustPersist(t *testing.T) {
 
 	ctx.People.Create(p)
 	ctx.People.Create(p1)
-	p2Record, rerr := ctx.People.Create(p2)
+	p2Set := ctx.People.Create(p2)
+	defer ctx.People.Save()
 
-	if rerr != nil {
-		t.Error(rerr)
+	if p2Set.Error != nil {
+		t.Error(p2Set.Error)
 	}
 
-	_, err := ctx.People.FindByID(p2Record.GetID())
+	_, err := ctx.People.FindByKey(p2Set.Record.GetKey())
 
 	if err != nil {
 		t.Error(err)
@@ -72,22 +72,23 @@ func TestUpdate_MustPersist(t *testing.T) {
 
 	p := sample.Person{Name: "Sarie", Age: 45}
 
-	record, err := ctx.People.Create(&p)
+	set := ctx.People.Create(&p)
+	defer ctx.People.Save()
 
-	if err != nil {
-		t.Error(err)
+	if set.Error != nil {
+		t.Error(set)
 	}
 
-	pData := record.Data().(*sample.Person)
+	pData := set.Record.Data().(*sample.Person)
 	pData.Age = 67
 
-	err = ctx.People.Update(record)
+	err := ctx.People.Update(set.Record)
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	againP, ferr := ctx.People.FindByID(record.GetID())
+	againP, ferr := ctx.People.FindByKey(set.Record.GetKey())
 
 	if ferr != nil {
 		t.Error(ferr)
@@ -105,24 +106,25 @@ func TestUpdate_LastUpdatedMustChange(t *testing.T) {
 
 	p := sample.Person{Name: "Sarie", Age: 45}
 
-	record, err := ctx.People.Create(&p)
+	set := ctx.People.Create(&p)
+	defer ctx.People.Save()
 
-	if err != nil {
-		t.Error(err)
+	if set.Error != nil {
+		t.Error(set.Record)
 	}
 
-	firstUpdate := record.Meta().LastUpdated
+	firstUpdate := set.Record.Meta().LastUpdated()
 
-	pData := record.Data().(*sample.Person)
+	pData := set.Record.Data().(*sample.Person)
 	pData.Age = 67
 
-	err = ctx.People.Update(record)
+	err := ctx.People.Update(set.Record)
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	againP, ferr := ctx.People.FindByID(record.GetID())
+	againP, ferr := ctx.People.FindByKey(set.Record.GetKey())
 
 	if ferr != nil {
 		t.Error(ferr)
@@ -130,8 +132,8 @@ func TestUpdate_LastUpdatedMustChange(t *testing.T) {
 
 	againMeta := againP.Meta()
 
-	if againMeta.LastUpdated == firstUpdate {
-		t.Errorf("Expected %v, got %v", firstUpdate, againMeta.LastUpdated)
+	if againMeta.LastUpdated() == firstUpdate {
+		t.Errorf("Expected %v, got %v", firstUpdate, againMeta.LastUpdated())
 	}
 }
 
@@ -140,66 +142,59 @@ func TestDelete_MustPersist(t *testing.T) {
 
 	p := sample.Person{Name: "DeleteMe", Age: 67}
 
-	record, err := ctx.People.Create(p)
+	set := ctx.People.Create(p)
+
+	if set.Error != nil {
+		t.Error(set)
+	}
+
+	err := ctx.People.Delete(set.Record.GetKey())
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = ctx.People.Delete(record.GetID())
+	_, rerr := ctx.People.FindByKey(set.Record.GetKey())
 
-	if err != nil {
-		t.Error(err)
-	}
-
-	_, rerr := ctx.People.FindByID(record.GetID())
-	expectedErr := fmt.Sprintf("ID %v not found in table Person", record.GetID())
-
-	if rerr.Error() != expectedErr {
-		t.Error("Expected item to be deleted.")
+	if rerr == nil {
+		t.Error("Expected item to be deleted. 'Not found error...'")
 	}
 }
 
 func TestFind_FindFilteredItems(t *testing.T) {
-	defer DestroyData()
+	//defer DestroyData()
 
 	p := sample.Person{Name: "Johan", Age: 13}
 	p1 := sample.Person{Name: "Sarel", Age: 15}
 	p2 := sample.Person{Name: "Jaco", Age: 24}
 
-	ctx.People.Create(p)
-	rec, _ := ctx.People.Create(p1)
-	ctx.People.Create(p2)
+	ctx.People.Create(&p)
+	set := ctx.People.Create(&p1)
+	ctx.People.Create(&p2)
+	ctx.People.Save()
 
-	results := ctx.People.Find(1, 1, func(obj husk.Dataer) bool {
-		return obj.(*sample.Person).Name == "Sarel"
-	})
+	//result := ctx.People.FindFirst(sample.ByName("Sarel"))
+	result := ctx.People.Find(1, 999, husk.Everything())
 
-	if len(results) != 1 {
-		t.Errorf("Expected %v, got %v", 1, len(results))
+	if result == nil {
+		t.Error("result is nil")
+		return
 	}
 
-	firstID := results[0].GetID()
+	rator := result.GetEnumerator()
+	firstID := husk.CrazyKey()
 
-	if firstID != rec.GetID() {
-		t.Errorf("Wrong ID, Expected %v, got %v", rec.GetID(), firstID)
+	for rator.MoveNext() {
+		curr := rator.Current()
+		someone := curr.Data().(*sample.Person)
+		t.Logf("%+v\n", curr)
+
+		if someone.Name == "Sarel" {
+			firstID = curr.GetKey()
+		}
 	}
-}
 
-// Eish
-func TestCreateRelated_MustBePresentInRelatedObject(t *testing.T) {
-	//defer DestroyData()
-
-	p := sample.Person{Name: "Somebody", Age: 13}
-	acc := sample.Account{"ABC123", &p}
-
-	ps, _ := ctx.People.Create(&p)
-	ctx.Accounts.Create(&acc)
-
-	result, _ := ctx.People.FindByID(ps.GetID())
-	pdata := result.Data().(*sample.Person)
-
-	if len(pdata.Accounts) != 1 {
-		t.Error("No accounts found for person")
+	if firstID != set.Record.GetKey() {
+		t.Errorf("Wrong ID, Expected %v, got %v", set.Record.GetKey(), firstID)
 	}
 }
