@@ -8,6 +8,7 @@ import (
 	"os"
 )
 
+//Taper 101[0]00100011
 type Taper interface {
 	Read(point *Point, obj interface{}) error
 	Write(obj interface{}) (*Point, error)
@@ -72,6 +73,7 @@ func (t *tape) Write(obj interface{}) (*Point, error) {
 	return result, nil
 }
 
+//Close closes the Data Track
 func (t *tape) Close() {
 	//we can expand here, later
 	t.track.Close()

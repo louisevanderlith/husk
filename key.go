@@ -1,15 +1,19 @@
 package husk
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 )
 
+//Key is the Primary Key for Husk Indexes.
 type Key struct {
+	//Stamp is the EPOCH Creation Time
 	Stamp int64
-	ID    int64
+	//ID increments with dulpicate Stamps
+	ID int64
 }
 
 // CrazyKey is a short-hand for NewKey(-1), returns old date
@@ -27,31 +31,35 @@ func NewKey(nextID int64) *Key {
 	return &Key{timestamp, nextID}
 }
 
-func ParseKey(rawKey string) *Key {
+// ParseKey tries to parse EPOCH-00 Keys.
+func ParseKey(rawKey string) (*Key, error) {
 	parts := strings.Split(rawKey, "-")
 
 	if len(parts) != 2 {
-		return CrazyKey()
+		return nil, errors.New("key not valid format")
 	}
 
-	stamp, _ := strconv.ParseInt(parts[0], 10, 64)
-	id, _ := strconv.ParseInt(parts[1], 10, 64)
+	stamp, err := strconv.ParseInt(parts[0], 10, 64)
 
-	return &Key{stamp, id}
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := strconv.ParseInt(parts[1], 10, 64)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Key{stamp, id}, nil
 }
 
-func (k *Key) ItemNo() int64 {
-	return k.ID
-}
-
-func (k *Key) Timestamp() int64 {
-	return k.Stamp
-}
-
+//String returns the string representation for a Key, also makes is easier to parse.
 func (k *Key) String() string {
 	return fmt.Sprintf("%d-%d", k.Stamp, k.ID)
 }
 
+//Timestamp gets the Stamp value of the Key
 func (k *Key) GetTimestamp() time.Time {
 	return time.Unix(k.Stamp, 0)
 }
@@ -59,20 +67,20 @@ func (k *Key) GetTimestamp() time.Time {
 //Compare returns -1 (smaller), 0 (equal), 1 (larger)
 func (k *Key) Compare(k2 *Key) int8 {
 	//Stamps are checked before ID
-	if k.Stamp < k2.Timestamp() {
+	if k.Stamp < k2.Stamp {
 		return -1
 	}
 
-	if k.ID > k2.ItemNo() {
+	if k.ID > k2.ID {
 		return 1
 	}
 
 	//Stamps are Equal
-	if k.ID < k2.ItemNo() {
+	if k.ID < k2.ID {
 		return -1
 	}
 
-	if k.ID > k2.ItemNo() {
+	if k.ID > k2.ID {
 		return 1
 	}
 
