@@ -80,21 +80,21 @@ func (t Table) Find(page, pageSize int, filter Filterer) Collection {
 	return result
 }
 
-func (t Table) FindFirst(filter Filterer) Recorder {
+func (t Table) FindFirst(filter Filterer) (Recorder, error) {
 	res := t.Find(1, 1, filter)
 
 	rator := res.GetEnumerator()
 	if !rator.MoveNext() {
-		return nil
+		return nil, errors.New("no results")
 	}
 
-	return rator.Current()
+	return rator.Current(), nil
 }
 
 func (t Table) Exists(filter Filterer) bool {
-	item := t.FindFirst(filter)
+	_, err := t.FindFirst(filter)
 
-	return item != nil
+	return err != nil
 }
 
 func (t Table) Create(obj Dataer) CreateSet {
