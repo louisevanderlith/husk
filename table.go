@@ -94,7 +94,7 @@ func (t Table) FindFirst(filter Filterer) (Recorder, error) {
 func (t Table) Exists(filter Filterer) bool {
 	_, err := t.FindFirst(filter)
 
-	return err != nil
+	return err == nil
 }
 
 func (t Table) Create(obj Dataer) CreateSet {

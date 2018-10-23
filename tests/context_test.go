@@ -141,7 +141,6 @@ func TestDelete_MustPersist(t *testing.T) {
 	defer DestroyData()
 
 	p := sample.Person{Name: "DeleteMe", Age: 67}
-
 	set := ctx.People.Create(p)
 
 	if set.Error != nil {
@@ -196,5 +195,29 @@ func TestFind_FindFilteredItems(t *testing.T) {
 
 	if firstID != set.Record.GetKey() {
 		t.Errorf("Wrong ID, Expected %v, got %v", set.Record.GetKey(), firstID)
+	}
+}
+
+func TestExsits_Empty_MustFalse(t *testing.T) {
+	DestroyData()
+
+	expect := false
+	actual := ctx.People.Exists(husk.Everything())
+
+	if actual != expect {
+		t.Errorf("Expecting %v, got %v", expect, actual)
+	}
+}
+
+func TestExsits_Any_MustTrue(t *testing.T) {
+	defer DestroyData()
+	p := sample.Person{Name: "Weirdo", Age: 55}
+	ctx.People.Create(p)
+
+	expect := true
+	actual := ctx.People.Exists(husk.Everything())
+
+	if actual != expect {
+		t.Errorf("Expecting %v, got %v", expect, actual)
 	}
 }
