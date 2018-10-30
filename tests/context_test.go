@@ -221,3 +221,19 @@ func TestExsits_Any_MustTrue(t *testing.T) {
 		t.Errorf("Expecting %v, got %v", expect, actual)
 	}
 }
+
+func TestFilter_FindWarden_MustBe10(t *testing.T) {
+	records := ctx.People.Find(1, 11, sample.ByNameAndAge("Warden", 22))
+
+	if records.Count() != 10 {
+		t.Errorf("Expected %d records, got %d", 10, records.Count())
+	}
+}
+
+func TestFilter_FindEverything_MustBe1000(t *testing.T) {
+	records := ctx.People.Find(1, 9999, husk.Everything())
+
+	if records.Count() != 1000 {
+		t.Errorf("Expecting 1000, got %d", records.Count())
+	}
+}

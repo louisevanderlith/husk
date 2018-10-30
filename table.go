@@ -58,6 +58,7 @@ func (t Table) FindByKey(key *Key) (Recorder, error) {
 func (t Table) Find(page, pageSize int, filter Filterer) Collection {
 	result := NewRecordSet()
 	skipCount := (page - 1) * pageSize
+	log.Printf("Searching %d records.", len(t.index.Items()))
 
 	for _, meta := range t.index.Items() {
 		dataObj := resultObject(t.t)
@@ -100,8 +101,12 @@ func (t Table) Exists(filter Filterer) bool {
 func (t Table) Create(obj Dataer) CreateSet {
 	valid, err := obj.Valid()
 
-	if !valid {
+	if err != nil {
 		return CreateSet{nil, err}
+	}
+
+	if !valid {
+		return CreateSet{nil, errors.New("validation failed")}
 	}
 
 	point, err := t.tape.Write(obj)
@@ -111,11 +116,11 @@ func (t Table) Create(obj Dataer) CreateSet {
 	}
 
 	meta := t.index.CreateSpace(point)
-	record := MakeRecord(meta, obj)
-
 	t.index.Insert(meta)
 
-	return CreateSet{record, err}
+	record := MakeRecord(meta, obj)
+
+	return CreateSet{record, nil}
 }
 
 func (t Table) CreateMulti(objs ...Dataer) []CreateSet {

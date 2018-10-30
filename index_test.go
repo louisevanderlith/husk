@@ -1,6 +1,7 @@
 package husk
 
 import (
+	"log"
 	"testing"
 	"time"
 )
@@ -89,4 +90,15 @@ func TestLess_LargerDate_LargerID_MustFalse(t *testing.T) {
 	if iK.Compare(jK) == -1 {
 		t.Error("Expected False")
 	}
+}
+
+func TestLoadIndex_AllDataPresent(t *testing.T) {
+	indxName := getIndexName("Person")
+	indx := loadIndex(indxName)
+	log.Printf("INDEX: %#v\n", indx)
+	if len(indx.Items()) == 0 {
+		t.Error("No data")
+	}
+
+	t.Fail()
 }

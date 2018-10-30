@@ -1,6 +1,8 @@
 package sample
 
 import (
+	"log"
+
 	"github.com/louisevanderlith/husk"
 )
 
@@ -25,5 +27,12 @@ func HigherBalance(balance float32) personFilter {
 		}
 
 		return false
+	}
+}
+
+func ByNameAndAge(name string, age int) personFilter {
+	return func(obj *Person) bool {
+		log.Printf("Filter:%#v\n", obj)
+		return obj.Name == name && obj.Age == age
 	}
 }

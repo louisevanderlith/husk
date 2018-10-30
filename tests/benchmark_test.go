@@ -3,6 +3,7 @@ package tests
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"testing"
 	"time"
 
@@ -41,6 +42,7 @@ func loadBodies() {
 		panic(err)
 	}
 
+	log.Printf("Loaded %d records", len(result))
 	bodies = result
 }
 
@@ -64,13 +66,35 @@ func TestInserts_SampleETL(t *testing.T) {
 	t.Fail()
 }
 
+func TestInserts_SampleData_MustLoadAll(t *testing.T) {
+	defer benchCtx.People.Save()
+
+	count := 0
+
+	for nxtPerson, valid := getNextPerson(); valid; nxtPerson, valid = getNextPerson() {
+		count++
+
+		set := benchCtx.People.Create(nxtPerson)
+
+		if set.Error != nil {
+			t.Error(set.Error)
+		}
+	}
+
+	log.Printf("Completed %d\n", count)
+}
+
 // BenchmarkInserts run a benchmark with simple objects
 func BenchmarkInserts(b *testing.B) {
 
 	nxtPerson, valid := getNextPerson()
 
 	if valid {
-		benchCtx.People.Create(nxtPerson)
+		set := benchCtx.People.Create(nxtPerson)
+
+		if set.Error != nil {
+			b.Logf("Record Failed to create: %s", set.Error.Error())
+		}
 	}
 
 	defer benchCtx.People.Save()
