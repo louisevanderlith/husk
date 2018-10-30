@@ -71,7 +71,7 @@ func (t Table) Find(page, pageSize int, filter Filterer) Collection {
 		if filter.Filter(dataObj) {
 			if skipCount == 0 && result.Count() < pageSize {
 				record := MakeRecord(meta, dataObj)
-				result.Add(record)
+				result.add(record)
 			} else {
 				skipCount--
 			}

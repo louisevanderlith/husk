@@ -1,6 +1,7 @@
 package husk
 
 import (
+	"encoding/json"
 	"log"
 )
 
@@ -8,7 +9,6 @@ type Collection interface {
 	Enumerable
 	Count() int
 	Any() bool
-	Add(record Recorder)
 }
 
 type RecordSet struct {
@@ -17,23 +17,25 @@ type RecordSet struct {
 	records []Recorder
 }
 
-func NewRecordSet() Collection {
+//NewRecordsSet creates a collection of records.
+func NewRecordSet() *RecordSet {
 	return &RecordSet{
 		index:  -1,
 		length: 0,
 	}
 }
 
+//Count returns the amount of records in the collection.
 func (s *RecordSet) Count() int {
 	return s.length
 }
 
+//Any returns false if there are no records in the collection.
 func (s *RecordSet) Any() bool {
 	return s.length > 0
 }
 
-//Add adds an item to the collection. Warning! calls Reset()
-func (s *RecordSet) Add(record Recorder) {
+func (s *RecordSet) add(record Recorder) {
 	s.length++
 	s.records = append(s.records, record)
 }
@@ -44,11 +46,7 @@ func (s *RecordSet) GetEnumerator() Enumerator {
 }
 
 func (s *RecordSet) Current() Recorder {
-	result := s.records[s.index]
-
-	log.Printf("RecordSET %+v\n", s)
-
-	return result
+	return s.records[s.index]
 }
 
 func (s *RecordSet) MoveNext() bool {
@@ -60,4 +58,9 @@ func (s *RecordSet) MoveNext() bool {
 func (s *RecordSet) Reset() {
 	s.index = -1
 	s.length = len(s.records)
+}
+
+func (s *RecordSet) MarshalJSON() ([]byte, error) {
+	data := s.records
+	return json.Marshal(data)
 }

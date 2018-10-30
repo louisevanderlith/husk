@@ -1,16 +1,16 @@
 package husk
 
+import (
+	"encoding/json"
+)
+
 type Record struct {
-	meta *meta
-	data Dataer
+	meta  *meta
+	value Dataer
 }
 
 func MakeRecord(meta *meta, obj Dataer) *Record {
-	result := Record{}
-	result.meta = meta
-	result.data = obj
-
-	return &result
+	return &Record{meta, obj}
 }
 
 func (r Record) GetKey() *Key {
@@ -22,7 +22,7 @@ func (r Record) Meta() *meta {
 }
 
 func (r Record) Data() Dataer {
-	return r.data
+	return r.value
 }
 
 func (r *Record) Set(obj Dataer) error {
@@ -32,7 +32,11 @@ func (r *Record) Set(obj Dataer) error {
 		return err
 	}
 
-	r.data = obj
+	r.value = obj
 
 	return nil
+}
+
+func (r *Record) MarshalJSON() ([]byte, error) {
+	return json.Marshal(r.value)
 }

@@ -1,6 +1,8 @@
 package tests
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/louisevanderlith/husk"
@@ -236,4 +238,16 @@ func TestFilter_FindEverything_MustBe1000(t *testing.T) {
 	if records.Count() != 1000 {
 		t.Errorf("Expecting 1000, got %d", records.Count())
 	}
+}
+
+func TestRecordSet_ToJSON_MustBeClean(t *testing.T) {
+	rows := ctx.People.Find(1, 5, husk.Everything())
+	bits, _ := json.Marshal(rows)
+
+	if strings.Contains(string(bits), "Value") {
+		t.Error("Final Object has Value")
+	}
+
+	t.Log(string(bits))
+	t.Fail()
 }
