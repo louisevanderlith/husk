@@ -3,6 +3,7 @@ package husk
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -33,20 +34,20 @@ func NewKey(nextID int64) *Key {
 
 // ParseKey tries to parse EPOCH-00 Keys.
 func ParseKey(rawKey string) (*Key, error) {
-	parts := strings.Split(rawKey, "-")
 
-	if len(parts) != 2 {
+	if !strings.Contains(rawKey, "`") {
 		return nil, errors.New("key not valid format")
 	}
 
-	stamp, err := strconv.ParseInt(parts[0], 10, 64)
-
+	dotIndx := strings.Index(rawKey, "`")
+	stamp, err := strconv.ParseInt(rawKey[:dotIndx], 10, 64)
+	log.Println("Stamp", stamp)
 	if err != nil {
 		return nil, err
 	}
 
-	id, err := strconv.ParseInt(parts[1], 10, 64)
-
+	id, err := strconv.ParseInt(rawKey[dotIndx+1:], 10, 64)
+	log.Println("ID", id)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +57,7 @@ func ParseKey(rawKey string) (*Key, error) {
 
 //String returns the string representation for a Key, also makes is easier to parse.
 func (k *Key) String() string {
-	return fmt.Sprintf("%d-%d", k.Stamp, k.ID)
+	return fmt.Sprintf("%d`%d", k.Stamp, k.ID)
 }
 
 //Timestamp gets the Stamp value of the Key
@@ -71,11 +72,10 @@ func (k *Key) Compare(k2 *Key) int8 {
 		return -1
 	}
 
-	if k.ID > k2.ID {
+	if k.Stamp > k2.Stamp {
 		return 1
 	}
 
-	//Stamps are Equal
 	if k.ID < k2.ID {
 		return -1
 	}

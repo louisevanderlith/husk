@@ -40,7 +40,7 @@ func (t Table) FindByKey(key *Key) (Recorder, error) {
 	meta := t.index.Get(key)
 
 	if meta == nil {
-		msg := fmt.Sprintf("Key %v not found in table %s", key, t.name)
+		msg := fmt.Sprintf("Key %v not found in %s", key, t.name)
 
 		return result, errors.New(msg)
 	}

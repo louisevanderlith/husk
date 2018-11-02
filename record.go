@@ -37,6 +37,10 @@ func (r *Record) Set(obj Dataer) error {
 	return nil
 }
 
+//MarshalJSON returns Records as {K:[KEY](1540921456-18), V: [VALUE](obj{})}
 func (r *Record) MarshalJSON() ([]byte, error) {
-	return json.Marshal(r.value)
+	return json.Marshal(struct {
+		K string
+		V interface{}
+	}{r.GetKey().String(), r.value})
 }

@@ -175,7 +175,7 @@ func TestFind_FindFilteredItems(t *testing.T) {
 	ctx.People.Save()
 
 	//result := ctx.People.FindFirst(sample.ByName("Sarel"))
-	result := ctx.People.Find(1, 999, husk.Everything())
+	result := ctx.People.Find(1, 3, husk.Everything())
 
 	if result == nil {
 		t.Error("result is nil")
