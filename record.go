@@ -13,7 +13,7 @@ func MakeRecord(meta *meta, obj Dataer) *Record {
 	return &Record{meta, obj}
 }
 
-func (r Record) GetKey() *Key {
+func (r Record) GetKey() Key {
 	return r.meta.GetKey()
 }
 

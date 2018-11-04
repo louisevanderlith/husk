@@ -17,6 +17,7 @@ Please note these numbers come from our Sample_ETL test, which inserts the same 
 * 0.3 (Dump Index only on save) Write: 1463rec/s (x3)
 * 0.4 (Better File handling) Write: 1221rec/s (0%)
 * 0.5 (Index Refactor, keys are Ptrs, improved read) Write: 2315rec/s (x2)
+* 0.6 (Key isn't a pointer anymore) 4314rec/s
 
 --MAC 3167rec/s (Unicorn Power)
 --WINDOWS 2315/rec/s (Spinning Disk, AMD)

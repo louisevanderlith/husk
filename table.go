@@ -14,11 +14,10 @@ type Table struct {
 	tape  Taper
 }
 
-func init() {
-	ensureDbDirectory()
-}
-
+//NewTable returns
 func NewTable(obj Dataer) Tabler {
+	ensureDbDirectory()
+
 	t := reflect.TypeOf(obj).Elem()
 	name := t.Name()
 	path := getIndexName(name)
@@ -35,7 +34,7 @@ func NewTable(obj Dataer) Tabler {
 	}
 }
 
-func (t Table) FindByKey(key *Key) (Recorder, error) {
+func (t Table) FindByKey(key Key) (Recorder, error) {
 	var result Recorder
 	meta := t.index.Get(key)
 
@@ -149,7 +148,7 @@ func (t Table) Update(record Recorder) error {
 	return err
 }
 
-func (t Table) Delete(key *Key) error {
+func (t Table) Delete(key Key) error {
 	deleted := t.index.Delete(key)
 
 	if !deleted {
@@ -171,6 +170,14 @@ func (t Table) Save() {
 
 func resultObject(t reflect.Type) Dataer {
 	return reflect.New(t).Interface().(Dataer)
+}
+
+func ensureDbDirectory() {
+	created := createDirectory(dbPath)
+
+	if !created {
+		log.Println("couldn't create dbPath folder")
+	}
 }
 
 func ensureTableIndex(tableName, indexName string) bool {

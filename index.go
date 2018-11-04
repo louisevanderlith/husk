@@ -7,14 +7,14 @@ import (
 
 //Index is sorted by EPOCH Time DESC
 type index struct {
-	Values map[*Key]*meta
-	Keys   []*Key
+	Values map[Key]*meta
+	Keys   []Key
 	Indx   int
 	Total  int64
 }
 
 func loadIndex(indexName string) Indexer {
-	result := &index{Values: make(map[*Key]*meta)}
+	result := &index{Values: make(map[Key]*meta)}
 	err := read(indexName, result)
 
 	if err != nil {
@@ -36,14 +36,14 @@ func (m *index) Insert(v *meta) {
 	m.Values[v.GetKey()] = v
 
 	//key in-front
-	tmp := []*Key{v.GetKey()}
+	tmp := []Key{v.GetKey()}
 	m.Keys = append(tmp, m.Keys...)
 
 	m.Total++
 }
 
 /// Find an entry by key, returns nil of not found or not active
-func (m *index) Get(k *Key) *meta {
+func (m *index) Get(k Key) *meta {
 	rec, ok := m.Values[k]
 
 	if !ok {
@@ -58,7 +58,7 @@ func (m *index) Get(k *Key) *meta {
 }
 
 /// Delete all entries of given key
-func (m *index) Delete(k *Key) bool {
+func (m *index) Delete(k Key) bool {
 	idxKey := m.getKeyIndex(k)
 
 	if idxKey == -1 {
@@ -75,8 +75,8 @@ func (m *index) Delete(k *Key) bool {
 	return true
 }
 
-func (m *index) Items() map[*Key]*meta {
-	result := make(map[*Key]*meta)
+func (m *index) Items() map[Key]*meta {
+	result := make(map[Key]*meta)
 
 	for k, meta := range m.Values {
 		if meta.Active {
@@ -87,7 +87,7 @@ func (m *index) Items() map[*Key]*meta {
 	return result
 }
 
-func (m *index) getKeyIndex(key *Key) int {
+func (m *index) getKeyIndex(key Key) int {
 	lft := int64(0)
 	rght := m.Total - int64(1)
 

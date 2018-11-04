@@ -5,13 +5,13 @@ import (
 )
 
 type meta struct {
-	Key     *Key
+	Key     Key
 	Active  bool
 	Pointer *Point
 	Changed time.Time
 }
 
-func NewMeta(key *Key, point *Point) *meta {
+func NewMeta(key Key, point *Point) *meta {
 	return &meta{
 		Key:     key,
 		Active:  true,
@@ -29,7 +29,7 @@ func (m *meta) Updated(p *Point) {
 	m.Changed = time.Now()
 }
 
-func (m *meta) GetKey() *Key {
+func (m *meta) GetKey() Key {
 	return m.Key
 }
 

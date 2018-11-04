@@ -2,7 +2,6 @@ package husk
 
 import (
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -12,14 +11,6 @@ const (
 	indexPath    string = "db/%s.index.husk"
 	indexPattern string = "db/*.index.husk"
 )
-
-func ensureDbDirectory() {
-	created := createDirectory(dbPath)
-
-	if !created {
-		log.Println("couldn't create dbPath folder")
-	}
-}
 
 func getRecordName(tableName string) string {
 	return fmt.Sprintf(dataPath, tableName)

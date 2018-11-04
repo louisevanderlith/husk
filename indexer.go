@@ -6,10 +6,10 @@ type Indexer interface {
 	Insert(v *meta)
 
 	/// Find an entry by key
-	Get(k *Key) *meta
+	Get(k Key) *meta
 
 	/// Delete all entries of given key
-	Delete(k *Key) bool
+	Delete(k Key) bool
 
-	Items() map[*Key]*meta
+	Items() map[Key]*meta
 }

@@ -18,55 +18,57 @@ type Key struct {
 }
 
 // CrazyKey is a short-hand for NewKey(-1), returns old date
-func CrazyKey() *Key {
+func CrazyKey() Key {
 	old := time.Date(1991, 8, 2, 12, 13, 57, 000, time.UTC)
-	return &Key{old.Unix(), int64(-1)}
+	return Key{old.Unix(), int64(-1)}
 }
 
-func NewKey(nextID int64) *Key {
+func NewKey(nextID int64) Key {
 	if nextID == -1 {
 		panic("rather call CrazyKey")
 	}
 
 	timestamp := time.Now().Unix()
-	return &Key{timestamp, nextID}
+	return Key{timestamp, nextID}
 }
 
 // ParseKey tries to parse EPOCH-00 Keys.
-func ParseKey(rawKey string) (*Key, error) {
+func ParseKey(rawKey string) (Key, error) {
 
 	if !strings.Contains(rawKey, "`") {
-		return nil, errors.New("key not valid format")
+		return CrazyKey(), errors.New("key not valid format")
 	}
 
 	dotIndx := strings.Index(rawKey, "`")
 	stamp, err := strconv.ParseInt(rawKey[:dotIndx], 10, 64)
 	log.Println("Stamp", stamp)
+
 	if err != nil {
-		return nil, err
+		return CrazyKey(), err
 	}
 
 	id, err := strconv.ParseInt(rawKey[dotIndx+1:], 10, 64)
 	log.Println("ID", id)
+
 	if err != nil {
-		return nil, err
+		return CrazyKey(), err
 	}
 
-	return &Key{stamp, id}, nil
+	return Key{stamp, id}, nil
 }
 
 //String returns the string representation for a Key, also makes is easier to parse.
-func (k *Key) String() string {
+func (k Key) String() string {
 	return fmt.Sprintf("%d`%d", k.Stamp, k.ID)
 }
 
 //Timestamp gets the Stamp value of the Key
-func (k *Key) GetTimestamp() time.Time {
+func (k Key) GetTimestamp() time.Time {
 	return time.Unix(k.Stamp, 0)
 }
 
 //Compare returns -1 (smaller), 0 (equal), 1 (larger)
-func (k *Key) Compare(k2 *Key) int8 {
+func (k Key) Compare(k2 Key) int8 {
 	//Stamps are checked before ID
 	if k.Stamp < k2.Stamp {
 		return -1

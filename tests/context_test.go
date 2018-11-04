@@ -29,20 +29,28 @@ func TestCreate_MustPersist(t *testing.T) {
 	p := sample.Person{Name: "Jan", Age: 25}
 
 	set := ctx.People.Create(&p)
-	defer ctx.People.Save()
 
 	if set.Error != nil {
 		t.Error(set.Error)
 	}
 
-	againP, ferr := ctx.People.FindByKey(set.Record.GetKey())
+	ctx.People.Save()
+	recKey := set.Record.GetKey().String()
+	k, _ := husk.ParseKey(recKey)
+	againP, ferr := ctx.People.FindByKey(k)
 
 	if ferr != nil {
 		t.Error(ferr)
+		return
 	}
 
 	if againP == nil {
 		t.Error("Record not found")
+		return
+	}
+
+	if againP.GetKey() != k {
+		t.Errorf("Expected %s, %s", recKey, againP.GetKey())
 	}
 }
 
