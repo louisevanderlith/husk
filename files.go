@@ -7,7 +7,7 @@ import (
 
 const (
 	dbPath       string = "db"
-	dataPath     string = "db/%s.data.husk"
+	dataPath     string = "db/%s.Data.husk"
 	indexPath    string = "db/%s.index.husk"
 	indexPattern string = "db/*.index.husk"
 )

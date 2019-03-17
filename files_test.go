@@ -6,7 +6,7 @@ import (
 
 func TestGetRecordName_Correct(t *testing.T) {
 	actual := getRecordName("Person")
-	expected := "db/Person.data.husk"
+	expected := "db/Person.Data.husk"
 
 	if actual != expected {
 		t.Errorf("Expected %s, got %s", expected, actual)

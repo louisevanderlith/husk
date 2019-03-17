@@ -12,16 +12,16 @@ This combination is refered to as a Key.
 
 #Bench History (TestInserts_SampleETL):
 Please note these numbers come from our Sample_ETL test, which inserts the same record(16kb) for 20seconds
-* 0.1 (One Record, One File) Write: 138rec/s
+* "0.1 (One Record, One File) Write: 138rec/s"
 * 0.2 (BigFile) Write: 509rec/s (x3.6)
 * 0.3 (Dump Index only on save) Write: 1463rec/s (x3)
 * 0.4 (Better File handling) Write: 1221rec/s (0%)
 * 0.5 (Index Refactor, keys are Ptrs, improved read) Write: 2315rec/s (x2)
 * 0.6 (Key isn't a pointer anymore) 4314rec/s
 
---MAC 3167rec/s (Unicorn Power)
---WINDOWS 2315/rec/s (Spinning Disk, AMD)
---LINUX 2289rec/s (SSD, Intel i5(2nd gen))
+* MAC 3167rec/s (Unicorn Power)
+* WINDOWS 2315/rec/s (Spinning Disk, AMD)
+* LINUX 2289rec/s (SSD, Intel i5(2nd gen))
 
 # Database Engine
 * Data-orientation and clustering
@@ -30,5 +30,5 @@ Please note these numbers come from our Sample_ETL test, which inserts the same 
 
 #trying to do this... https://en.wikipedia.org/wiki/IBM_Informix_C-ISAM
 
-##--encourage goroutines. Trigger events for AfterCommit()
+## encourage goroutines. Trigger events for AfterCommit()
 * implement golang ReaderWriter for Block Storage
