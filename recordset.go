@@ -2,7 +2,6 @@ package husk
 
 import (
 	"encoding/json"
-	"log"
 )
 
 type Collection interface {
@@ -51,7 +50,6 @@ func (s *RecordSet) Current() Recorder {
 
 func (s *RecordSet) MoveNext() bool {
 	s.index++
-	log.Printf("index: %d\n", s.index)
 	return s.index < s.length
 }
 

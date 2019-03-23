@@ -18,10 +18,10 @@ func ByName(name string) personFilter {
 	}
 }
 
-func HigherBalance(balance float32) personFilter {
+func SameBalance(balance float32) personFilter {
 	return func(obj *Person) bool {
 		for _, v := range obj.Accounts {
-			if v.Balance > 15610 {
+			if v.Balance == balance {
 				return true
 			}
 		}
