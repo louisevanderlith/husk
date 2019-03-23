@@ -3,6 +3,7 @@ package husk
 import (
 	"bytes"
 	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -46,6 +47,21 @@ func read(filePath string, result interface{}) error {
 	if len(byts) != 0 {
 		buffer := bytes.NewBuffer(byts)
 		err = gob.NewDecoder(buffer).Decode(result)
+	}
+
+	return err
+}
+
+func readJSON(filepath string, result interface{}) error {
+	byts, err := ioutil.ReadFile(filepath)
+
+	if err != nil {
+		return err
+	}
+
+	if len(byts) != 0 {
+		buffer := bytes.NewBuffer(byts)
+		err = json.NewDecoder(buffer).Decode(result)
 	}
 
 	return err

@@ -57,7 +57,6 @@ func (t Table) FindByKey(key Key) (Recorder, error) {
 func (t Table) Find(page, pageSize int, filter Filterer) Collection {
 	result := NewRecordSet()
 	skipCount := (page - 1) * pageSize
-	log.Printf("Searching %d records.", len(t.index.Items()))
 
 	for _, meta := range t.index.Items() {
 		dataObj := resultObject(t.t)
@@ -166,6 +165,29 @@ func (t Table) Save() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+//Seed will load the seedfile into the husk database ONLY if it's empty.
+func (t Table) Seed(seedfile string) error {
+	if !t.Exists(Everything()) {
+
+		result := reflect.New(reflect.SliceOf(t.t)).Interface()
+
+		err := readJSON(seedfile, &result)
+
+		if err != nil {
+			return err
+		}
+
+		val := reflect.ValueOf(result).Elem()
+
+		for i := 0; i < val.Len(); i++ {
+			item := val.Index(i).Interface()
+			t.Create(item.(Dataer))
+		}
+	}
+
+	return nil
 }
 
 func resultObject(t reflect.Type) Dataer {

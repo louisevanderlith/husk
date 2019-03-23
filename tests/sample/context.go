@@ -8,7 +8,18 @@ type Context struct {
 
 func NewContext() Context {
 	result := Context{}
+
 	result.People = husk.NewTable(new(Person))
 
 	return result
+}
+
+func (ctx Context) Seed() {
+	err := ctx.People.Seed("people.seed.json")
+
+	if err != nil {
+		panic(err)
+	}
+
+	ctx.People.Save()
 }
