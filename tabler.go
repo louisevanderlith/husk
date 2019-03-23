@@ -21,4 +21,7 @@ type Tabler interface {
 
 	//Writes data to disk.
 	Save()
+
+	//Seeds data from a json file
+	Seed(seedfile string) error
 }
