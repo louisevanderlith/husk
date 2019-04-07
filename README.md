@@ -16,7 +16,7 @@ Husk uses an index with pointers to the actual location on the tape for faster a
 
 # Bench History (TestInserts_SampleETL):
 Please note these numbers come from our Sample_ETL test, which inserts the same record(16kb) for 20seconds
-* 0.1 (One Record, One File) Write: 138rec/s
+* "0.1 (One Record, One File) Write: 138rec/s"
 * 0.2 (BigFile) Write: 509rec/s (x3.6)
 * 0.3 (Dump Index only on save) Write: 1463rec/s (x3)
 * 0.4 (Better File handling) Write: 1221rec/s (0%)
