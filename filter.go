@@ -8,6 +8,7 @@ type Filterer interface {
 
 type filter func(obj Dataer) bool
 
+//Filter is the function which casts objects before sending them to the filter.
 func (f filter) Filter(obj Dataer) bool {
 	return f(obj)
 }

@@ -20,7 +20,7 @@ type tape struct {
 	offset int64
 }
 
-func NewTape(trackname string) Taper {
+func newTape(trackname string) Taper {
 	track, err := os.OpenFile(trackname, os.O_RDWR|os.O_CREATE, 0644)
 
 	if err != nil {
@@ -52,7 +52,7 @@ func (t *tape) Read(point *Point, result interface{}) error {
 }
 
 func (t *tape) Write(obj interface{}) (*Point, error) {
-	result := NewPoint(t.offset, 0)
+	result := newPoint(t.offset, 0)
 
 	byts, err := toBytes(obj)
 

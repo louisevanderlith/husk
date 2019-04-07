@@ -83,7 +83,7 @@ func TestUpdate_MustPersist(t *testing.T) {
 	p := sample.Person{Name: "Sarie", Age: 45}
 
 	set := ctx.People.Create(&p)
-	defer ctx.People.Save()
+	ctx.People.Save()
 
 	if set.Error != nil {
 		t.Error(set)

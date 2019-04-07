@@ -104,7 +104,6 @@ func createFile(filePath string) bool {
 		var file, err = os.Create(filePath)
 
 		if err != nil {
-			log.Println(err)
 			return false
 		}
 
@@ -128,6 +127,7 @@ func createDirectory(folderPath string) bool {
 	return !notExist
 }
 
+//DestroyContents will remove the file at the given path
 func DestroyContents(path string) error {
 	d, err := os.Open(path)
 

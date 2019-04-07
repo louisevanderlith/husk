@@ -1,8 +1,6 @@
 package sample
 
 import (
-	"log"
-
 	"github.com/louisevanderlith/husk"
 )
 
@@ -32,7 +30,6 @@ func SameBalance(balance float32) personFilter {
 
 func ByNameAndAge(name string, age int) personFilter {
 	return func(obj *Person) bool {
-		log.Printf("Filter:%#v\n", obj)
 		return obj.Name == name && obj.Age == age
 	}
 }

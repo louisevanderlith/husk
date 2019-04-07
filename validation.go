@@ -15,6 +15,7 @@ type tagMeta struct {
 	PropName string
 }
 
+//IValidation provides a Validation method for checking `hsk` tags
 type IValidation interface {
 	Valid(obj interface{}, meta tagMeta) (bool, []string)
 }
