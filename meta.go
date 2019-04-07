@@ -11,7 +11,7 @@ type meta struct {
 	Changed time.Time
 }
 
-func NewMeta(key Key, point *Point) *meta {
+func newMeta(key Key, point *Point) *meta {
 	return &meta{
 		Key:     key,
 		Active:  true,

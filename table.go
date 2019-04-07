@@ -7,6 +7,7 @@ import (
 	"reflect"
 )
 
+//Table controls the index and physical data tape for all records associated
 type Table struct {
 	t     reflect.Type
 	name  string
@@ -14,7 +15,7 @@ type Table struct {
 	tape  Taper
 }
 
-//NewTable returns
+//NewTable returns a Table
 func NewTable(obj Dataer) Tabler {
 	ensureDbDirectory()
 
@@ -30,10 +31,11 @@ func NewTable(obj Dataer) Tabler {
 		t:     t,
 		name:  name,
 		index: index,
-		tape:  NewTape(trackName),
+		tape:  newTape(trackName),
 	}
 }
 
+//FindByKey returns a Record which has the same Key
 func (t Table) FindByKey(key Key) (Recorder, error) {
 	var result Recorder
 	meta := t.index.Get(key)
@@ -54,6 +56,7 @@ func (t Table) FindByKey(key Key) (Recorder, error) {
 	return result, err
 }
 
+//Find returns a Collection of records matching the applied filter function.
 func (t Table) Find(page, pageSize int, filter Filterer) Collection {
 	result := NewRecordSet()
 	skipCount := (page - 1) * pageSize
@@ -79,6 +82,7 @@ func (t Table) Find(page, pageSize int, filter Filterer) Collection {
 	return result
 }
 
+//FindFirst will return that first record that matches the 'filter'
 func (t Table) FindFirst(filter Filterer) (Recorder, error) {
 	res := t.Find(1, 1, filter)
 
@@ -90,12 +94,14 @@ func (t Table) FindFirst(filter Filterer) (Recorder, error) {
 	return rator.Current(), nil
 }
 
+//Exists will return true of any records match the filter.
 func (t Table) Exists(filter Filterer) bool {
 	_, err := t.FindFirst(filter)
 
 	return err == nil
 }
 
+//Create adds a new data object to the collection.
 func (t Table) Create(obj Dataer) CreateSet {
 	valid, err := obj.Valid()
 
@@ -121,6 +127,7 @@ func (t Table) Create(obj Dataer) CreateSet {
 	return CreateSet{record, nil}
 }
 
+//CreateMulti calls Create on a collection of data objects.
 func (t Table) CreateMulti(objs ...Dataer) []CreateSet {
 	var result []CreateSet
 
@@ -132,6 +139,7 @@ func (t Table) CreateMulti(objs ...Dataer) []CreateSet {
 	return result
 }
 
+//Update writes new data a record
 func (t Table) Update(record Recorder) error {
 	valid, err := record.Data().Valid()
 
@@ -147,6 +155,7 @@ func (t Table) Update(record Recorder) error {
 	return err
 }
 
+//Delete physically removes the data found for the Key
 func (t Table) Delete(key Key) error {
 	deleted := t.index.Delete(key)
 
@@ -157,6 +166,7 @@ func (t Table) Delete(key Key) error {
 	return nil
 }
 
+//Save writes the contents of the index
 func (t Table) Save() {
 	indexName := getIndexName(t.name)
 
