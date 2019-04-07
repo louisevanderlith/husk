@@ -1,6 +1,7 @@
 package husk
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -89,5 +90,5 @@ func (k Key) Compare(k2 Key) int8 {
 
 //MarshalJSON will return a Key as {stamp}`{key}
 func (k Key) MarshalJSON() ([]byte, error) {
-	return []byte(k.String()), nil
+	return json.Marshal(k.String())
 }
