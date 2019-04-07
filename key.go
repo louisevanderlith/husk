@@ -1,10 +1,8 @@
 package husk
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +22,7 @@ func CrazyKey() Key {
 	return Key{old.Unix(), int64(-1)}
 }
 
+//NewKey creates a new key with the current time as the Stamp
 func NewKey(nextID int64) Key {
 	if nextID == -1 {
 		panic("rather call CrazyKey")
@@ -42,14 +41,12 @@ func ParseKey(rawKey string) (Key, error) {
 
 	dotIndx := strings.Index(rawKey, "`")
 	stamp, err := strconv.ParseInt(rawKey[:dotIndx], 10, 64)
-	log.Println("Stamp", stamp)
 
 	if err != nil {
 		return CrazyKey(), err
 	}
 
 	id, err := strconv.ParseInt(rawKey[dotIndx+1:], 10, 64)
-	log.Println("ID", id)
 
 	if err != nil {
 		return CrazyKey(), err
@@ -63,7 +60,7 @@ func (k Key) String() string {
 	return fmt.Sprintf("%d`%d", k.Stamp, k.ID)
 }
 
-//Timestamp gets the Stamp value of the Key
+//GetTimestamp returns the creation time of the record
 func (k Key) GetTimestamp() time.Time {
 	return time.Unix(k.Stamp, 0)
 }
@@ -91,8 +88,6 @@ func (k Key) Compare(k2 Key) int8 {
 }
 
 //MarshalJSON will return a Key as {stamp}`{key}
-func (r Key) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Key string
-	}{r.String()})
+func (k Key) MarshalJSON() ([]byte, error) {
+	return []byte(k.String()), nil
 }

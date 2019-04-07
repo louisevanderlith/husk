@@ -28,7 +28,7 @@ func loadIndex(indexName string) Indexer {
 func (m *index) CreateSpace(point *Point) *meta {
 	key := NewKey(m.Total)
 
-	return NewMeta(key, point)
+	return newMeta(key, point)
 }
 
 /// Create new entry in this index that maps key K to value V

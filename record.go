@@ -4,27 +4,33 @@ import (
 	"encoding/json"
 )
 
+//Record exists of the actual data, and meta info about the data
 type Record struct {
 	meta  *meta
 	value Dataer
 }
 
+//MakeRecord creates a new Record
 func MakeRecord(meta *meta, obj Dataer) *Record {
 	return &Record{meta, obj}
 }
 
+//GetKey returns the key value from meta
 func (r Record) GetKey() Key {
 	return r.meta.GetKey()
 }
 
+//Meta returns the record's meta information
 func (r Record) Meta() *meta {
 	return r.meta
 }
 
+//Data returns the record's actual data
 func (r Record) Data() Dataer {
 	return r.value
 }
 
+//Set applies the value of 'obj' to the current record.
 func (r *Record) Set(obj Dataer) error {
 	valid, err := obj.Valid()
 
