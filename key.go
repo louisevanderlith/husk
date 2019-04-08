@@ -33,9 +33,8 @@ func NewKey(nextID int64) Key {
 	return Key{timestamp, nextID}
 }
 
-// ParseKey tries to parse EPOCH-00 Keys.
+// ParseKey tries to parse EPOCH`00 Keys.
 func ParseKey(rawKey string) (Key, error) {
-
 	if !strings.Contains(rawKey, "`") {
 		return CrazyKey(), errors.New("key not valid format")
 	}
@@ -91,4 +90,19 @@ func (k Key) Compare(k2 Key) int8 {
 //MarshalJSON will return a Key as {stamp}`{key}
 func (k Key) MarshalJSON() ([]byte, error) {
 	return json.Marshal(k.String())
+}
+
+//UnmarshalJSON will return {stamp}`{key} as a Key
+func (k *Key) UnmarshalJSON(b []byte) error {
+	stripEsc := strings.Replace(string(b), "\"", "", -1)
+	tmpK, err := ParseKey(stripEsc)
+
+	if err != nil {
+		return err
+	}
+
+	k.ID = tmpK.ID
+	k.Stamp = tmpK.Stamp
+
+	return nil
 }
