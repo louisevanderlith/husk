@@ -18,6 +18,19 @@ func TestKey_CanParse(t *testing.T) {
 	}
 }
 
+func TestKey_CanParseEmpty(t *testing.T) {
+	k := "0`0"
+	prs, err := ParseKey(k)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if prs.String() != CrazyKey().String() {
+		t.Errorf("Expected %v, got %v", prs, CrazyKey())
+	}
+}
+
 func TestKey_TOJSON(t *testing.T) {
 	k := CrazyKey()
 

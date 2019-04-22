@@ -39,6 +39,10 @@ func ParseKey(rawKey string) (Key, error) {
 		return CrazyKey(), errors.New("key not valid format")
 	}
 
+	if len(rawKey) < 11 {
+		return CrazyKey(), nil
+	}
+
 	dotIndx := strings.Index(rawKey, "`")
 	stamp, err := strconv.ParseInt(rawKey[:dotIndx], 10, 64)
 
