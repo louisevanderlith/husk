@@ -1,22 +1,25 @@
-# Husk DB-Engine
+# Husk DB-Engine [![CodeFactor](https://www.codefactor.io/repository/github/louisevanderlith/husk/badge)](https://www.codefactor.io/repository/github/louisevanderlith/husk)
 Husk was designed to be used directly by Webservice and API based applications.
 The amount of traffic would then be limited by the amount of requests your API can handle, instead of how-many the Database server can take.
 
 Thie engine attempts to force users to keep business logic close to their required objects, and minimizes entry points and chances for loop holes. ie. when a developer accesses or modifies data outside of the intended scope. 
 
 This includes many sources; 
-* Directly modifying data via an external tool. (SSMS, WorkBench, etc.)
+* Directly modifying data via an external tool. (SQL Server Management Studio, WorkBench, Toad, etc.)
 * Able to access core "Database" API in higher-level code, rather than the Logic Layer as intended.  (Front-end, Public facing API End-points)
+* Editing the data file directly.
 
 All records are internally sorted by their creation Timestamp, and then their traditional "ID".
-This combination is refered to as a Key.
+This combination is refered to as a 'Key'.
+The Key allows the index to sort the records by creation date, by default. 
+This creates faster access to the most recent records and removes need for sorting after every query.
 
 The database engine works similiar to ISAM, as it stores data on a sequential "tape" which lives in memory and on disk.
 Husk uses an index with pointers to the actual location on the tape for faster access.
 
 # Bench History (TestInserts_SampleETL):
 Please note these numbers come from our Sample_ETL test, which inserts the same record(16kb) for 20seconds
-* "0.1 (One Record, One File) Write: 138rec/s"
+* 0.1 (One Record, One File) Write: 138rec/s
 * 0.2 (BigFile) Write: 509rec/s (x3.6)
 * 0.3 (Dump Index only on save) Write: 1463rec/s (x3)
 * 0.4 (Better File handling) Write: 1221rec/s (0%)
