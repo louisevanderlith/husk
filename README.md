@@ -17,8 +17,20 @@ This creates faster access to the most recent records and removes need for sorti
 The database engine works similiar to ISAM, as it stores data on a sequential "tape" which lives in memory and on disk.
 Husk uses an index with pointers to the actual location on the tape for faster access.
 
-# Bench History (TestInserts_SampleETL):
-Please note these numbers come from our Sample_ETL test, which inserts the same record(16kb) for 20seconds
+# Advantages over traditional databases.
+* Results are always sorted by Creation Date in descending order, as this is part of the Primary Key. Quite husk.Key
+* Pagesize (Current page and results per page) has to be specified for collection results.
+* Database embedded into application.
+* Doesn't require a "ConnectionString"
+* Works nicely with Unit Tests and TDD
+* Seed files are JSON, so other systems can easily be migrated
+* No SELECT or any kind Query language. Go only.
+* Filter using Go functions.
+* Objects are "Serialization" aware, and columns like 'Password' can easily be hidden using `json:"-"`
+* Everything related to an object will always remain nested within that object. 
+
+# Benchmark History:
+Please note these numbers come from our Sample_ETL test, which inserts the same record(16kb) for 20seconds (This function has since been deprecated. We will have to write a better benchmark)
 * 0.1 (One Record, One File) Write: 138rec/s
 * 0.2 (BigFile) Write: 509rec/s (x3.6)
 * 0.3 (Dump Index only on save) Write: 1463rec/s (x3)
@@ -33,8 +45,6 @@ Please note these numbers come from our Sample_ETL test, which inserts the same 
 
 # Database Engine
 * Data-orientation and clustering
-* Everything related to an object will always remain nested within that object. 
-* ISAM?
 
 # Setting up a database
 Create a Table Object
