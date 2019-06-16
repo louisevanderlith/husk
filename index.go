@@ -2,7 +2,7 @@ package husk
 
 import (
 	"fmt"
-	"math"
+	"sort"
 )
 
 //Index is sorted by EPOCH Time DESC
@@ -15,11 +15,7 @@ type index struct {
 
 func loadIndex(indexName string) Indexer {
 	result := &index{Values: make(map[Key]*meta)}
-	err := read(indexName, result)
-
-	if err != nil {
-		panic(err)
-	}
+	read(indexName, result)
 
 	return result
 }
@@ -59,19 +55,27 @@ func (m *index) Get(k Key) *meta {
 
 /// Delete all entries of given key
 func (m *index) Delete(k Key) bool {
-	idxKey := m.getKeyIndex(k)
+	idxKey := m.getIndexOfKey(k)
 
 	if idxKey == -1 {
 		return false
 	}
 
-	//disable meta
-	m.Values[k].Disable()
+	meta := m.Get(k)
 
-	m.Keys = append(m.Keys[:idxKey], m.Keys[idxKey+1:]...)
+	if meta == nil {
+		return false
+	}
+
+	meta.Disable()
+
+	copy(m.Keys[idxKey:], m.Keys[idxKey+1:])
+	m.Keys = m.Keys[:len(m.Keys)-1]
+
 	fmt.Printf("disable %v :: %+v", k, m)
 
 	m.Total--
+
 	return true
 }
 
@@ -87,25 +91,15 @@ func (m *index) Items() map[Key]*meta {
 	return result
 }
 
-func (m *index) getKeyIndex(key Key) int {
-	lft := int64(0)
-	rght := m.Total - int64(1)
+func (m *index) getIndexOfKey(key Key) int {
+	indx := sort.Search(len(m.Keys), func(i int) bool {
+		curr := m.Keys[i]
+		//Smaller or Equals, since husk is ordered by Created Date desc
+		return curr.Compare(key) <= 0
+	})
 
-	for lft != rght {
-		middle := int64(math.Ceil(float64((lft + rght) / 2)))
-		curr := m.Keys[middle]
-
-		//1 == greater than
-		if curr.Compare(key) == 1 {
-			rght = middle - 1
-			continue
-		}
-
-		lft = middle
-	}
-
-	if m.Keys[lft] == key {
-		return int(lft)
+	if indx < len(m.Keys) && m.Keys[indx] == key {
+		return indx
 	}
 
 	return -1

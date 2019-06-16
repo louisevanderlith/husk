@@ -21,11 +21,11 @@ func NewTable(obj Dataer) Tabler {
 
 	t := reflect.TypeOf(obj).Elem()
 	name := t.Name()
-	path := getIndexName(name)
+	idxName := getIndexName(name)
 	trackName := getRecordName(name)
 
-	ensureTableIndex(name, path)
-	index := loadIndex(path)
+	ensureTableIndex(name, idxName)
+	index := loadIndex(idxName)
 
 	return Table{
 		t:     t,
@@ -155,7 +155,7 @@ func (t Table) Update(record Recorder) error {
 	return err
 }
 
-//Delete physically removes the data found for the Key
+//Delete marks the Record as Disabled and removes it from the index.
 func (t Table) Delete(key Key) error {
 	deleted := t.index.Delete(key)
 
@@ -167,14 +167,16 @@ func (t Table) Delete(key Key) error {
 }
 
 //Save writes the contents of the index
-func (t Table) Save() {
+func (t Table) Save() error {
 	indexName := getIndexName(t.name)
 
 	err := write(indexName, t.index)
 
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
 
 //Seed will load the seedfile into the husk database ONLY if it's empty.

@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -30,13 +31,14 @@ func newTape(trackname string) Taper {
 	return &tape{track, int64(0)}
 }
 
+//Reads the data @point into result
 func (t *tape) Read(point *Point, result interface{}) error {
 	len := point.Len
 	byts := make([]byte, len, len)
 
 	read, err := t.track.ReadAt(byts, point.Offset)
 
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return err
 	}
 

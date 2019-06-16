@@ -155,12 +155,17 @@ func TestDelete_MustPersist(t *testing.T) {
 
 	if set.Error != nil {
 		t.Error(set)
+		return
 	}
 
+	ctx.People.Save()
+	t.Log(set.Record.GetKey())
+	//
 	err := ctx.People.Delete(set.Record.GetKey())
 
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	_, rerr := ctx.People.FindByKey(set.Record.GetKey())

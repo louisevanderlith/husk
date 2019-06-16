@@ -2,7 +2,6 @@ package husk
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 )
 
@@ -14,7 +13,6 @@ func (s aString) Valid() (bool, error) {
 
 func TestDitto_NoError(t *testing.T) {
 	aStringFilter := func(obj aString) bool {
-		fmt.Printf("Row: %+v\n", obj)
 		return obj == "PASS"
 	}
 
@@ -24,5 +22,4 @@ func TestDitto_NoError(t *testing.T) {
 	if pass {
 		t.Error("function returned true, unexepectedly")
 	}
-	t.Fail()
 }
