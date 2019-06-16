@@ -20,7 +20,7 @@ type Tabler interface {
 	Delete(keys Key) error
 
 	//Writes data to disk.
-	Save()
+	Save() error
 
 	//Seeds data from a json file
 	Seed(seedfile string) error

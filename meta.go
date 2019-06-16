@@ -22,6 +22,7 @@ func newMeta(key Key, point *Point) *meta {
 
 func (m *meta) Disable() {
 	m.Active = false
+	m.Changed = time.Now()
 }
 
 func (m *meta) Updated(p *Point) {

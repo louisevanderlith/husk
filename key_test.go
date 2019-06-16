@@ -41,7 +41,7 @@ func TestKey_TOJSON(t *testing.T) {
 		t.Error(err)
 	}
 
-	if string(actual) == string(expected) {
+	if string(actual) != string(expected) {
 		t.Errorf("expected %s, got %s", string(expected), string(actual))
 	}
 }

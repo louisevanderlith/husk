@@ -90,14 +90,3 @@ func TestLess_LargerDate_LargerID_iK_Smaller(t *testing.T) {
 		t.Error("Expected iK Smaller")
 	}
 }
-
-func TestLoadIndex_AllDataPresent(t *testing.T) {
-	indxName := getIndexName("Person")
-	indx := loadIndex(indxName)
-
-	if len(indx.Items()) == 0 {
-		t.Error("No data")
-	}
-
-	t.Fail()
-}

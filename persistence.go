@@ -80,7 +80,7 @@ func getDBIndexFiles() map[string]string {
 	for _, v := range files {
 		path := v.Name()
 
-		if strings.Contains(path, "index.oli") {
+		if strings.HasSuffix(path, ".index.husk") {
 			key := cleanTableName(path)
 			result[key] = path
 		}
