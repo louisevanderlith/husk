@@ -69,7 +69,7 @@ func (t Table) Find(page, pageSize int, filter Filterer) Collection {
 			panic(err)
 		}
 
-		if filter.Filter(dataObj) {
+		if dataObj != nil && filter.Filter(dataObj) {
 			if skipCount == 0 && result.Count() < pageSize {
 				record := MakeRecord(meta, dataObj)
 				result.add(record)
@@ -166,6 +166,28 @@ func (t Table) Delete(key Key) error {
 	return nil
 }
 
+//Calculate does fancy stuff
+func (t Table) Calculate(result interface{}, calculator Calculator) error {
+	for _, meta := range t.index.Items() {
+		dataObj := resultObject(t.t)
+		err := t.tape.Read(meta.Point(), dataObj)
+
+		if err != nil {
+			panic(err)
+		}
+
+		if dataObj != nil {
+			err = calculator.Calc(result, dataObj)
+
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 //Save writes the contents of the index
 func (t Table) Save() error {
 	indexName := getIndexName(t.name)
@@ -181,8 +203,8 @@ func (t Table) Save() error {
 
 //Seed will load the seedfile into the husk database ONLY if it's empty.
 func (t Table) Seed(seedfile string) error {
-	if !t.Exists(Everything()) {
 
+	if !t.Exists(Everything()) {
 		result := reflect.New(reflect.SliceOf(t.t)).Interface()
 
 		err := readJSON(seedfile, &result)
