@@ -16,7 +16,7 @@ func init() {
 }
 
 func BenchmarkFilter_PerfectBalance(b *testing.B) {
-	set := benchCtx.People.Find(1, 50, sample.SameBalance(30321.12))
+	set := benchCtx.People.Find(1, 10, sample.SameBalance(30321.12))
 
 	itor := set.GetEnumerator()
 
@@ -26,7 +26,7 @@ func BenchmarkFilter_PerfectBalance(b *testing.B) {
 		b.Log(curr.Data())
 	}
 
-	if set.Count() < 5 {
-		b.Errorf("%+v\n", set)
+	if set.Count() != 10 {
+		b.Errorf("%+v\n", set.Count())
 	}
 }

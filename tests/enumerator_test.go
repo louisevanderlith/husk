@@ -8,7 +8,7 @@ import (
 )
 
 func TestNext_ShouldReturnNext(t *testing.T) {
-	//defer DestroyData()
+	defer DestroyData()
 	names := []string{"Johan", "Sarel", "Jaco"}
 	p := sample.Person{Name: names[0], Age: 13}
 	ctx.People.Create(p)

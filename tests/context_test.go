@@ -2,6 +2,7 @@ package tests
 
 import (
 	"encoding/json"
+	"log"
 	"strings"
 	"testing"
 
@@ -16,11 +17,11 @@ func init() {
 }
 
 func DestroyData() {
-	/*err := husk.DestroyContents("db")
+	err := husk.DestroyContents("db")
 
 	if err != nil {
 		log.Println(err)
-	}*/
+	}
 }
 
 func TestCreate_MustPersist(t *testing.T) {
@@ -64,7 +65,7 @@ func TestCreate_MultipleEntries_MustPersist(t *testing.T) {
 	ctx.People.Create(p)
 	ctx.People.Create(p1)
 	p2Set := ctx.People.Create(p2)
-	defer ctx.People.Save()
+	ctx.People.Save()
 
 	if p2Set.Error != nil {
 		t.Error(p2Set.Error)
@@ -176,47 +177,58 @@ func TestDelete_MustPersist(t *testing.T) {
 }
 
 func TestFind_FindFilteredItems(t *testing.T) {
-	//defer DestroyData()
+	defer DestroyData()
 
 	p := sample.Person{Name: "Johan", Age: 13}
-	p1 := sample.Person{Name: "Sarel", Age: 15}
+	p1 := &sample.Person{Name: "Sarel", Age: 15}
 	p2 := sample.Person{Name: "Jaco", Age: 24}
 
 	ctx.People.Create(&p)
-	set := ctx.People.Create(&p1)
+	set := ctx.People.Create(p1)
 	ctx.People.Create(&p2)
 	ctx.People.Save()
 
-	//result := ctx.People.FindFirst(sample.ByName("Sarel"))
-	result := ctx.People.Find(1, 3, husk.Everything())
+	ctx.People.Update(set.Record)
+	ctx.People.Save()
+	result, err := ctx.People.FindFirst(sample.ByName("Sarel"))
+	//result := ctx.People.Find(1, 3, husk.Everything())
 
-	if result == nil {
-		t.Error("result is nil")
+	if err != nil {
+		t.Error(err)
 		return
 	}
 
-	rator := result.GetEnumerator()
-	firstID := husk.CrazyKey()
-
-	for rator.MoveNext() {
-		curr := rator.Current()
-		someone := curr.Data().(*sample.Person)
-		t.Logf("%+v\n", curr)
-
-		if someone.Name == "Sarel" {
-			firstID = curr.GetKey()
-		}
-	}
-
-	if firstID != set.Record.GetKey() {
-		t.Errorf("Wrong ID, Expected %v, got %v", set.Record.GetKey(), firstID)
+	if result.GetKey() != set.Record.GetKey() {
+		t.Errorf("Wrong ID, Expected %v, got %v", set.Record.GetKey(), result.GetKey())
 	}
 }
 
-func TestExsits_Empty_MustFalse(t *testing.T) {
-	DestroyData()
+func TestCalc_SumTotalBalance(t *testing.T) {
+	bal := float32(0)
 
-	expect := false
+	ctx.People.Calculate(&bal, sample.SumBalance())
+
+	t.Log(bal)
+	t.Fail()
+	if bal == 0 {
+		t.Error("balance not updated")
+	}
+}
+
+func TestCalc_FindLowestBalance(t *testing.T) {
+	name := ""
+
+	ctx.People.Calculate(&name, sample.LowestBalance())
+
+	if name != "Kelley" {
+		t.Errorf("name not found, got %s", name)
+	}
+}
+
+func TestExsits_Empty_MustTrue(t *testing.T) {
+	defer DestroyData()
+
+	expect := true
 	actual := ctx.People.Exists(husk.Everything())
 
 	if actual != expect {
@@ -246,7 +258,7 @@ func TestFilter_FindWarden_MustBe10(t *testing.T) {
 }
 
 func TestFilter_FindEverything_MustBe1000(t *testing.T) {
-	records := ctx.People.Find(1, 9999, husk.Everything())
+	records := ctx.People.Find(1, 1000, husk.Everything())
 
 	if records.Count() != 1000 {
 		t.Errorf("Expecting 1000, got %d", records.Count())
@@ -260,7 +272,4 @@ func TestRecordSet_ToJSON_MustBeClean(t *testing.T) {
 	if strings.Contains(string(bits), "Value") {
 		t.Error("Final Object has Value")
 	}
-
-	t.Log(string(bits))
-	t.Fail()
 }
