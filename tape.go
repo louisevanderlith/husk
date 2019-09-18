@@ -3,7 +3,6 @@ package husk
 import (
 	"bytes"
 	"encoding/gob"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -42,9 +41,9 @@ func (t *tape) Read(point *Point, result interface{}) error {
 		return err
 	}
 
+	//The database is still empty.
 	if int64(read) != len {
-		msg := fmt.Sprintf("Incorrect Read: read %d, len %d", read, len)
-		return errors.New(msg)
+		return nil
 	}
 
 	buffer := bytes.NewBuffer(byts)
@@ -66,6 +65,10 @@ func (t *tape) Write(obj interface{}) (*Point, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	if wrote != len(byts) {
+		return nil, fmt.Errorf("Incomplete write. %v - %v", wrote, len(byts))
 	}
 
 	written := int64(wrote)

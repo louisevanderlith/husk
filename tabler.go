@@ -8,6 +8,8 @@ type Tabler interface {
 	Find(page, pageSize int, filter Filterer) Collection
 	//FindFirst does what Find does, but will only return one record.
 	FindFirst(filter Filterer) (Recorder, error)
+	//Calculate can modify a result set with data values
+	Calculate(result interface{}, calculator Calculator) error
 	//Exists confirms the existence of a record
 	Exists(filter Filterer) bool
 	//Create saves a new object to the database
