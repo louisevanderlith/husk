@@ -16,13 +16,16 @@ type RecordSet struct {
 	index   int
 	length  int
 	records []Recorder
+	page    int
+	limit   int
 }
 
 //NewRecordSet creates a collection of records.
-func NewRecordSet() *RecordSet {
+func NewRecordSet(page, limit int) *RecordSet {
 	return &RecordSet{
 		index:  -1,
 		length: 0,
+		limit:  limit,
 	}
 }
 
@@ -66,6 +69,15 @@ func (s *RecordSet) Reset() {
 
 //MarshalJSON returns only the 'records' instead of everything
 func (s *RecordSet) MarshalJSON() ([]byte, error) {
-	data := s.records
-	return json.Marshal(data)
+	return json.Marshal(struct {
+		Page    int
+		Limit   int
+		Length  int
+		Records []Recorder
+	}{
+		Page:    s.page,
+		Limit:   s.limit,
+		Length:  s.length,
+		Records: s.records,
+	})
 }
