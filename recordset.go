@@ -21,11 +21,12 @@ type RecordSet struct {
 }
 
 //NewRecordSet creates a collection of records.
-func NewRecordSet(page, limit int) *RecordSet {
+func NewRecordSet(page int) *RecordSet {
 	return &RecordSet{
 		index:  -1,
 		length: 0,
-		limit:  limit,
+		limit:  0,
+		page:   page,
 	}
 }
 
@@ -42,6 +43,11 @@ func (s *RecordSet) Any() bool {
 func (s *RecordSet) add(record Recorder) {
 	s.length++
 	s.records = append(s.records, record)
+}
+
+//bean is used as bean counter, this will show the total possible record count
+func (s *RecordSet) bean() {
+	s.limit++
 }
 
 //GetEnumerator returns the Enumerator used for iteration

@@ -58,7 +58,7 @@ func (t Table) FindByKey(key Key) (Recorder, error) {
 
 //Find returns a Collection of records matching the applied filter function.
 func (t Table) Find(page, pageSize int, filter Filterer) Collection {
-	result := NewRecordSet(page, pageSize)
+	result := NewRecordSet(page)
 	skipCount := (page - 1) * pageSize
 
 	for _, meta := range t.index.Items() {
@@ -76,6 +76,8 @@ func (t Table) Find(page, pageSize int, filter Filterer) Collection {
 			} else {
 				skipCount--
 			}
+
+			result.bean()
 		}
 	}
 
