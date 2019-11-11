@@ -9,7 +9,7 @@ type Context struct {
 func NewContext() Context {
 	result := Context{}
 
-	result.People = husk.NewTable(new(Person))
+	result.People = husk.NewTable(Person{})
 
 	return result
 }

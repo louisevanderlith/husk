@@ -19,7 +19,12 @@ type Table struct {
 func NewTable(obj Dataer) Tabler {
 	ensureDbDirectory()
 
-	t := reflect.TypeOf(obj).Elem()
+	t := reflect.TypeOf(obj)
+
+	if t.Kind() == reflect.Ptr {
+		panic("obj must not be a pointer")
+	}
+
 	name := t.Name()
 	idxName := getIndexName(name)
 	trackName := getRecordName(name)
@@ -41,19 +46,21 @@ func (t Table) FindByKey(key Key) (Recorder, error) {
 	meta := t.index.Get(key)
 
 	if meta == nil {
-		msg := fmt.Sprintf("Key %v not found in %s", key, t.name)
+		msg := fmt.Sprintf("key %v not found in %s", key, t.name)
 
 		return result, errors.New(msg)
 	}
 
-	dataObj := resultObject(t.t)
-	err := t.tape.Read(meta.Point(), dataObj)
+	dObj := reflect.New(t.t)
+	dInf := dObj.Interface()
+	err := t.tape.Read(meta.Point(), dInf)
 
-	if err == nil {
-		result = MakeRecord(meta, dataObj)
+	if err != nil {
+		return nil, err
 	}
 
-	return result, err
+	dataObj := dObj.Elem().Interface().(Dataer)
+	return MakeRecord(meta, dataObj), nil
 }
 
 //Find returns a Collection of records matching the applied filter function.
@@ -62,14 +69,17 @@ func (t Table) Find(page, pageSize int, filter Filterer) Collection {
 	skipCount := (page - 1) * pageSize
 
 	for _, meta := range t.index.Items() {
-		dataObj := resultObject(t.t)
-		err := t.tape.Read(meta.Point(), dataObj)
+		dObj := reflect.New(t.t)
+		dInf := dObj.Interface()
+		err := t.tape.Read(meta.Point(), dInf)
 
 		if err != nil {
 			panic(err)
 		}
 
-		if dataObj != nil && filter.Filter(dataObj) {
+		dataObj := dObj.Elem().Interface().(Dataer)
+
+		if filter.Filter(dataObj) {
 			if skipCount == 0 && result.Count() < pageSize {
 				record := MakeRecord(meta, dataObj)
 				result.add(record)
@@ -171,12 +181,15 @@ func (t Table) Delete(key Key) error {
 //Calculate does fancy stuff
 func (t Table) Calculate(result interface{}, calculator Calculator) error {
 	for _, meta := range t.index.Items() {
-		dataObj := resultObject(t.t)
-		err := t.tape.Read(meta.Point(), dataObj)
+		dObj := reflect.New(t.t)
+		dInf := dObj.Interface()
+		err := t.tape.Read(meta.Point(), dInf)
 
 		if err != nil {
 			panic(err)
 		}
+
+		dataObj := dObj.Elem().Interface().(Dataer)
 
 		if dataObj != nil {
 			err = calculator.Calc(result, dataObj)
@@ -224,10 +237,6 @@ func (t Table) Seed(seedfile string) error {
 	}
 
 	return nil
-}
-
-func resultObject(t reflect.Type) Dataer {
-	return reflect.New(t).Interface().(Dataer)
 }
 
 func ensureDbDirectory() {
