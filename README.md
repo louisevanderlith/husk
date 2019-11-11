@@ -104,8 +104,8 @@ Create a record
 ```go
 p := sample.Person{Name: "Jan", Age: 25}
 
-//Send a Ptr to the object to Create
-set := ctx.People.Create(&p)
+//Send in the object to Create
+set := ctx.People.Create(p)
 
 if set.Error != nil {
 	t.Error(set.Error)
@@ -141,7 +141,7 @@ rator := result.GetEnumerator()
 //Moves to the next item in the collection, until there isn't anything else
 for rator.MoveNext() {
 	curr := rator.Current()
-	someone := curr.Data().(*sample.Person)
+	someone := curr.Data().(sample.Person)
 
 	log.Printf("$v\n", someone)
 }
@@ -150,23 +150,23 @@ for rator.MoveNext() {
 Creating filters for records
 ```go
 //Specify a Data Filter for the given Record
-type personFilter func(obj *Person) bool
+type personFilter func(obj Person) bool
 
 //Filter is called by Husk, but casted to the correct type.
 func (f personFilter) Filter(obj husk.Dataer) bool {
-	return f(obj.(*Person))
+	return f(obj.(Person))
 }
 
 //Filter People by their Name
 func ByName(name string) personFilter {
-	return func(obj *Person) bool {
+	return func(obj Person) bool {
 		return obj.Name == name
 	}
 }
 
 //Filter for searching by Balance on Accounts
 func SameBalance(balance float32) personFilter {
-	return func(obj *Person) bool {
+	return func(obj Person) bool {
 		for _, v := range obj.Accounts {
 			if v.Balance == balance {
 				return true
