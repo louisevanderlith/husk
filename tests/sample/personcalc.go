@@ -4,14 +4,14 @@ import (
 	"github.com/louisevanderlith/husk"
 )
 
-type personCalc func(result interface{}, obj *Person) error
+type personCalc func(result interface{}, obj Person) error
 
 func (f personCalc) Calc(result interface{}, obj husk.Dataer) error {
-	return f(result, obj.(*Person))
+	return f(result, obj.(Person))
 }
 
 func SumBalance() personCalc {
-	return func(result interface{}, obj *Person) error {
+	return func(result interface{}, obj Person) error {
 		answ := float32(0)
 		for _, acc := range obj.Accounts {
 			answ += acc.Balance
@@ -26,7 +26,7 @@ func SumBalance() personCalc {
 
 func LowestBalance() personCalc {
 	min := float32(9999999)
-	return func(result interface{}, obj *Person) error {
+	return func(result interface{}, obj Person) error {
 		answ := float32(0)
 		for _, acc := range obj.Accounts {
 			answ += acc.Balance

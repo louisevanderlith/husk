@@ -29,7 +29,7 @@ func TestCreate_MustPersist(t *testing.T) {
 
 	p := sample.Person{Name: "Jan", Age: 25}
 
-	set := ctx.People.Create(&p)
+	set := ctx.People.Create(p)
 
 	if set.Error != nil {
 		t.Error(set.Error)
@@ -83,14 +83,14 @@ func TestUpdate_MustPersist(t *testing.T) {
 
 	p := sample.Person{Name: "Sarie", Age: 45}
 
-	set := ctx.People.Create(&p)
+	set := ctx.People.Create(p)
 	ctx.People.Save()
 
 	if set.Error != nil {
 		t.Error(set)
 	}
 
-	pData := set.Record.Data().(*sample.Person)
+	pData := set.Record.Data().(sample.Person)
 	pData.Age = 67
 
 	err := ctx.People.Update(set.Record)
@@ -105,7 +105,7 @@ func TestUpdate_MustPersist(t *testing.T) {
 		t.Error(ferr)
 	}
 
-	againData := againP.Data().(*sample.Person)
+	againData := againP.Data().(sample.Person)
 
 	if againData.Age != p.Age {
 		t.Errorf("Expected %v, got %v", p.Age, againData.Age)
@@ -117,7 +117,7 @@ func TestUpdate_LastUpdatedMustChange(t *testing.T) {
 
 	p := sample.Person{Name: "Sarie", Age: 45}
 
-	set := ctx.People.Create(&p)
+	set := ctx.People.Create(p)
 	defer ctx.People.Save()
 
 	if set.Error != nil {
@@ -126,7 +126,7 @@ func TestUpdate_LastUpdatedMustChange(t *testing.T) {
 
 	firstUpdate := set.Record.Meta().LastUpdated()
 
-	pData := set.Record.Data().(*sample.Person)
+	pData := set.Record.Data().(sample.Person)
 	pData.Age = 67
 
 	err := ctx.People.Update(set.Record)
@@ -180,16 +180,26 @@ func TestFind_FindFilteredItems(t *testing.T) {
 	defer DestroyData()
 
 	p := sample.Person{Name: "Johan", Age: 13}
-	p1 := &sample.Person{Name: "Sarel", Age: 15}
+	p1 := sample.Person{Name: "Sarel", Age: 15}
 	p2 := sample.Person{Name: "Jaco", Age: 24}
 
-	ctx.People.Create(&p)
+	ctx.People.Create(p)
 	set := ctx.People.Create(p1)
-	ctx.People.Create(&p2)
+	ctx.People.Create(p2)
 	ctx.People.Save()
 
-	ctx.People.Update(set.Record)
-	ctx.People.Save()
+	err := ctx.People.Update(set.Record)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = ctx.People.Save()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	result, err := ctx.People.FindFirst(sample.ByName("Sarel"))
 	//result := ctx.People.Find(1, 3, husk.Everything())
 

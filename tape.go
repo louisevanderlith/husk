@@ -43,13 +43,13 @@ func (t *tape) Read(point *Point, result interface{}) error {
 
 	//The database is still empty.
 	if int64(read) != len {
-		return nil
+		return fmt.Errorf("read %v, need %v", read, len)
 	}
 
 	buffer := bytes.NewBuffer(byts)
-	err = gob.NewDecoder(buffer).Decode(result)
+	dec := gob.NewDecoder(buffer)
 
-	return nil
+	return dec.Decode(result)
 }
 
 func (t *tape) Write(obj interface{}) (*Point, error) {
