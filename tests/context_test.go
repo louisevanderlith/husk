@@ -177,7 +177,7 @@ func TestDelete_MustPersist(t *testing.T) {
 }
 
 func TestFind_FindFilteredItems(t *testing.T) {
-	defer DestroyData()
+	//defer DestroyData()
 
 	p := sample.Person{Name: "Johan", Age: 13}
 	p1 := sample.Person{Name: "Sarel", Age: 15}
@@ -185,6 +185,11 @@ func TestFind_FindFilteredItems(t *testing.T) {
 
 	ctx.People.Create(p)
 	set := ctx.People.Create(p1)
+
+	if set.Error != nil {
+		t.Fatal(set.Error)
+	}
+
 	ctx.People.Create(p2)
 	ctx.People.Save()
 

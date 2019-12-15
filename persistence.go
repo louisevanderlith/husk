@@ -91,7 +91,7 @@ func getDBIndexFiles() map[string]string {
 
 func toBytes(obj interface{}) ([]byte, error) {
 	buffer := new(bytes.Buffer)
-	err := gob.NewEncoder(buffer).Encode(obj)
+	err := gob.NewEncoder(buffer).Encode(&obj)
 
 	return buffer.Bytes(), err
 }

@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 )
 
 //Taper 101[0]00100011
 type Taper interface {
-	Read(point *Point, obj interface{}) error
+	Read(point *Point, obj reflect.Value) error
 	Write(obj interface{}) (*Point, error)
 	Close()
 }
@@ -30,10 +31,10 @@ func newTape(trackname string) Taper {
 	return &tape{track, int64(0)}
 }
 
-//Reads the data @point into result
-func (t *tape) Read(point *Point, result interface{}) error {
+//Reads the data @point into obj
+func (t *tape) Read(point *Point, obj reflect.Value) error {
 	len := point.Len
-	byts := make([]byte, len, len)
+	byts := make([]byte, len) //, len, len)
 
 	read, err := t.track.ReadAt(byts, point.Offset)
 
@@ -49,7 +50,7 @@ func (t *tape) Read(point *Point, result interface{}) error {
 	buffer := bytes.NewBuffer(byts)
 	dec := gob.NewDecoder(buffer)
 
-	return dec.Decode(result)
+	return dec.DecodeValue(obj)
 }
 
 func (t *tape) Write(obj interface{}) (*Point, error) {

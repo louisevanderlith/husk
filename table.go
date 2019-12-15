@@ -1,6 +1,7 @@
 package husk
 
 import (
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"log"
@@ -24,7 +25,7 @@ func NewTable(obj Dataer) Tabler {
 	if t.Kind() == reflect.Ptr {
 		panic("obj must not be a pointer")
 	}
-
+	gob.Register(obj)
 	name := t.Name()
 	idxName := getIndexName(name)
 	trackName := getRecordName(name)
@@ -52,14 +53,14 @@ func (t Table) FindByKey(key Key) (Recorder, error) {
 	}
 
 	dObj := reflect.New(t.t)
-	dInf := dObj.Interface()
-	err := t.tape.Read(meta.Point(), dInf)
+	err := t.tape.Read(meta.Point(), dObj)
 
 	if err != nil {
 		return nil, err
 	}
 
-	dataObj := dObj.Elem().Interface().(Dataer)
+	dInf := dObj.Interface()
+	dataObj := dInf.(Dataer)
 	return MakeRecord(meta, dataObj), nil
 }
 
@@ -70,14 +71,15 @@ func (t Table) Find(page, pageSize int, filter Filterer) Collection {
 
 	for _, meta := range t.index.Items() {
 		dObj := reflect.New(t.t)
-		dInf := dObj.Interface()
-		err := t.tape.Read(meta.Point(), dInf)
+		log.Printf("%v\r\n", t.t)
+		err := t.tape.Read(meta.Point(), dObj)
 
 		if err != nil {
 			panic(err)
 		}
 
-		dataObj := dObj.Elem().Interface().(Dataer)
+		dInf := dObj.Interface()
+		dataObj := dInf.(Dataer)
 
 		if filter.Filter(dataObj) {
 			if skipCount == 0 && result.Count() < pageSize {
@@ -153,11 +155,21 @@ func (t Table) CreateMulti(objs ...Dataer) []CreateSet {
 
 //Update writes new data a record
 func (t Table) Update(record Recorder) error {
-	valid, err := record.Data().Valid()
+	if record == nil {
+		return errors.New("record is empty")
+	}
+
+	data := record.Data()
+
+	if data == nil {
+		return errors.New("data is empty")
+	}
+
+	valid, err := data.Valid()
 
 	if valid {
 		meta := record.Meta()
-		point, err := t.tape.Write(record.Data())
+		point, err := t.tape.Write(data)
 
 		if err == nil {
 			meta.Updated(point)
@@ -182,14 +194,14 @@ func (t Table) Delete(key Key) error {
 func (t Table) Calculate(result interface{}, calculator Calculator) error {
 	for _, meta := range t.index.Items() {
 		dObj := reflect.New(t.t)
-		dInf := dObj.Interface()
-		err := t.tape.Read(meta.Point(), dInf)
+		err := t.tape.Read(meta.Point(), dObj)
 
 		if err != nil {
 			panic(err)
 		}
 
-		dataObj := dObj.Elem().Interface().(Dataer)
+		dInf := dObj.Interface()
+		dataObj := dInf.(Dataer)
 
 		if dataObj != nil {
 			err = calculator.Calc(result, dataObj)
