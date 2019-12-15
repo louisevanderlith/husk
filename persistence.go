@@ -3,13 +3,14 @@ package husk
 import (
 	"bytes"
 	"encoding/gob"
-	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/louisevanderlith/husk/serials"
 )
 
 func init() {
@@ -28,13 +29,14 @@ func write(filePath string, data interface{}) error {
 		return errors.New("unable to create " + filePath)
 	}
 
-	bytes, err := toBytes(data)
+	ser := serials.GobSerial{}
+	bytes, err := ser.Encode(data) //toBytes(data)
 
-	if err == nil {
-		err = ioutil.WriteFile(filePath, bytes, 0644)
+	if err != nil {
+		return err
 	}
 
-	return err
+	return ioutil.WriteFile(filePath, bytes, 0644)
 }
 
 func read(filePath string, result interface{}) error {
@@ -47,21 +49,6 @@ func read(filePath string, result interface{}) error {
 	if len(byts) != 0 {
 		buffer := bytes.NewBuffer(byts)
 		err = gob.NewDecoder(buffer).Decode(result)
-	}
-
-	return err
-}
-
-func readJSON(filepath string, result interface{}) error {
-	byts, err := ioutil.ReadFile(filepath)
-
-	if err != nil {
-		return err
-	}
-
-	if len(byts) != 0 {
-		buffer := bytes.NewBuffer(byts)
-		err = json.NewDecoder(buffer).Decode(result)
 	}
 
 	return err
@@ -87,13 +74,6 @@ func getDBIndexFiles() map[string]string {
 	}
 
 	return result
-}
-
-func toBytes(obj interface{}) ([]byte, error) {
-	buffer := new(bytes.Buffer)
-	err := gob.NewEncoder(buffer).Encode(obj)
-
-	return buffer.Bytes(), err
 }
 
 func createFile(filePath string) bool {
