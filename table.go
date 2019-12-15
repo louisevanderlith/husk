@@ -1,11 +1,15 @@
 package husk
 
 import (
+	"bytes"
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"reflect"
+
+	"github.com/louisevanderlith/husk/serials"
 )
 
 //Table controls the index and physical data tape for all records associated
@@ -17,7 +21,7 @@ type Table struct {
 }
 
 //NewTable returns a Table
-func NewTable(obj Dataer) Tabler {
+func NewTable(obj Dataer, serial Serializer) Tabler {
 	ensureDbDirectory()
 
 	t := reflect.TypeOf(obj)
@@ -37,7 +41,7 @@ func NewTable(obj Dataer) Tabler {
 		t:     t,
 		name:  name,
 		index: index,
-		tape:  newTape(trackName),
+		tape:  newTape(trackName, serial),
 	}
 }
 
@@ -53,13 +57,13 @@ func (t Table) FindByKey(key Key) (Recorder, error) {
 	}
 
 	dObj := reflect.New(t.t)
-	err := t.tape.Read(meta.Point(), dObj)
+	dInf := dObj.Interface()
+	err := t.tape.Read(meta.Point(), &dInf)
 
 	if err != nil {
 		return nil, err
 	}
 
-	dInf := dObj.Interface()
 	dataObj := dInf.(Dataer)
 	return MakeRecord(meta, dataObj), nil
 }
@@ -71,14 +75,13 @@ func (t Table) Find(page, pageSize int, filter Filterer) Collection {
 
 	for _, meta := range t.index.Items() {
 		dObj := reflect.New(t.t)
-		log.Printf("%v\r\n", t.t)
-		err := t.tape.Read(meta.Point(), dObj)
+		dInf := dObj.Interface()
+		err := t.tape.Read(meta.Point(), &dInf)
 
 		if err != nil {
 			panic(err)
 		}
 
-		dInf := dObj.Interface()
 		dataObj := dInf.(Dataer)
 
 		if filter.Filter(dataObj) {
@@ -194,13 +197,13 @@ func (t Table) Delete(key Key) error {
 func (t Table) Calculate(result interface{}, calculator Calculator) error {
 	for _, meta := range t.index.Items() {
 		dObj := reflect.New(t.t)
-		err := t.tape.Read(meta.Point(), dObj)
+		dInf := dObj.Interface()
+		err := t.tape.Read(meta.Point(), &dInf)
 
 		if err != nil {
 			panic(err)
 		}
 
-		dInf := dObj.Interface()
 		dataObj := dInf.(Dataer)
 
 		if dataObj != nil {
@@ -234,7 +237,15 @@ func (t Table) Seed(seedfile string) error {
 	if !t.Exists(Everything()) {
 		result := reflect.New(reflect.SliceOf(t.t)).Interface()
 
-		err := readJSON(seedfile, &result)
+		jser := serials.JsonSerial{}
+		byts, err := ioutil.ReadFile(seedfile)
+
+		if err != nil {
+			return nil
+		}
+
+		buffer := bytes.NewBuffer(byts)
+		err = jser.Decode(buffer, &result)
 
 		if err != nil {
 			return err
