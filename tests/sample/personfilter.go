@@ -36,3 +36,13 @@ func ByNameAndAge(name string, age int) personFilter {
 		return obj.Name == name && obj.Age == age
 	}
 }
+
+func ByObject(parm Person) personFilter {
+	return func(obj Person) bool {
+		match := (len(parm.Name) == 0 || obj.Name == parm.Name) && (parm.Age == 0 || obj.Age == parm.Age)
+
+		log.Printf("%+v\r\n", obj)
+
+		return match
+	}
+}
