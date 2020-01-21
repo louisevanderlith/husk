@@ -265,7 +265,11 @@ func TestExsits_Any_MustTrue(t *testing.T) {
 }
 
 func TestFilter_FindWarden_MustBe10(t *testing.T) {
-	records := ctx.People.Find(1, 11, sample.ByNameAndAge("Warden", 22))
+	parm := sample.Person{
+		Name:     "Warden",
+		Age:      22,
+	}
+	records := ctx.People.Find(1, 11, sample.ByObject(parm))
 
 	if records.Count() != 10 {
 		t.Errorf("Expected %d records, got %d", 10, records.Count())
