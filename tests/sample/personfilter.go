@@ -1,8 +1,6 @@
 package sample
 
 import (
-	"log"
-
 	"github.com/louisevanderlith/husk"
 )
 
@@ -14,7 +12,6 @@ func (f personFilter) Filter(obj husk.Dataer) bool {
 
 func ByName(name string) personFilter {
 	return func(obj Person) bool {
-		log.Printf("%+v\n", obj)
 		return obj.Name == name
 	}
 }
@@ -40,9 +37,6 @@ func ByNameAndAge(name string, age int) personFilter {
 func ByObject(parm Person) personFilter {
 	return func(obj Person) bool {
 		match := (len(parm.Name) == 0 || obj.Name == parm.Name) && (parm.Age == 0 || obj.Age == parm.Age)
-
-		log.Printf("%+v\r\n", obj)
-
 		return match
 	}
 }

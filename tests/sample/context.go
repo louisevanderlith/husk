@@ -13,7 +13,7 @@ type Context struct {
 func NewContext() Context {
 	result := Context{}
 
-	result.People = husk.NewTable(Person{}, &serials.GobSerial{})
+	result.People = husk.NewTable(Person{}, serials.GobSerial{})
 	//result.Names = husk.NewTable(Name{}, &serials.StringSerial{})
 
 	return result
@@ -27,4 +27,8 @@ func (ctx Context) Seed() {
 	}
 
 	ctx.People.Save()
+}
+
+func (ctx Context) Save() error {
+	return ctx.People.Save()
 }
