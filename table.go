@@ -45,6 +45,10 @@ func NewTable(obj Dataer, serial Serializer) Tabler {
 	}
 }
 
+func (t Table) Type() reflect.Type{
+	return t.t
+}
+
 //FindByKey returns a Record which has the same Key
 func (t Table) FindByKey(key Key) (Recorder, error) {
 	var result Recorder
