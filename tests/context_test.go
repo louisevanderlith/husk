@@ -14,6 +14,7 @@ var ctx sample.Context
 
 func init() {
 	ctx = sample.NewContext()
+	ctx.Seed()
 }
 
 func DestroyData() {
@@ -21,6 +22,33 @@ func DestroyData() {
 
 	if err != nil {
 		log.Println(err)
+	}
+}
+
+func TestDiscover_ListNames(t *testing.T){
+	exp := []string{"People"}
+	act := husk.TableNames(ctx)
+
+	if len(act) != 1 {
+		t.Error("invalid length discovered")
+		return
+	}
+
+	if exp[0] != act[0] {
+		t.Errorf("Expected %s, found %s", exp, act)
+	}
+}
+
+func TestDiscover_ListLayouts(t *testing.T){
+	act := husk.TableLayouts(ctx)
+
+	if len(act) != 1 {
+		t.Error("invalid length discovered")
+		return
+	}
+
+	if act["People"] == nil {
+		t.Errorf("no object found %v", act)
 	}
 }
 
@@ -252,7 +280,7 @@ func TestExsits_Empty_MustTrue(t *testing.T) {
 }
 
 func TestExsits_Any_MustTrue(t *testing.T) {
-	defer DestroyData()
+	//defer DestroyData()
 	p := sample.Person{Name: "Weirdo", Age: 55}
 	ctx.People.Create(p)
 
@@ -270,6 +298,24 @@ func TestFilter_FindWarden_MustBe10(t *testing.T) {
 		Age:      22,
 	}
 	records := ctx.People.Find(1, 11, sample.ByObject(parm))
+
+	if records.Count() != 10 {
+		t.Errorf("Expected %d records, got %d", 10, records.Count())
+	}
+}
+
+func TestFilter_FindWarden_MustBeByFields(t *testing.T) {
+	parm := sample.Person{
+		Name:     "Warden",
+		Age:      22,
+	}
+
+	records := ctx.People.Find(1, 10, husk.ByFields(parm))
+
+	enumer := records.GetEnumerator()
+	for enumer.MoveNext() {
+		t.Log(enumer.Current())
+	}
 
 	if records.Count() != 10 {
 		t.Errorf("Expected %d records, got %d", 10, records.Count())

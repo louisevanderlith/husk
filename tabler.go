@@ -1,5 +1,7 @@
 package husk
 
+import "reflect"
+
 //Tabler provides everything a Table should be able to do.
 type Tabler interface {
 	//FindByKey finds a record with a matching key.
@@ -26,4 +28,21 @@ type Tabler interface {
 
 	//Seeds data from a json file
 	Seed(seedfile string) error
+}
+
+// GetFields returns
+func GetFields(t Dataer) map[string]interface{} {
+	result := make(map[string]interface{})
+
+	val := reflect.ValueOf(t)
+	valType := val.Type()
+
+	for i := 0; i < val.NumField(); i++ {
+		valueField := val.Field(i)
+		typeField := valType.Field(i)
+
+		result[typeField.Name] = valueField.Interface()
+	}
+
+	return result
 }
