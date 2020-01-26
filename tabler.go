@@ -28,6 +28,7 @@ type Tabler interface {
 
 	//Seeds data from a json file
 	Seed(seedfile string) error
+	Type() reflect.Type
 }
 
 // GetFields returns
