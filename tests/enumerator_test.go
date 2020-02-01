@@ -20,10 +20,16 @@ func TestNext_ShouldReturnNext(t *testing.T) {
 	p2 := sample.Person{Name: names[2], Age: 24}
 	ctx.People.Create(p2)
 
-	results := ctx.People.Find(1, 3, husk.Everything())
+	results, err := ctx.People.Find(1, 3, husk.Everything())
+
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
 
 	if results.Count() == 0 {
 		t.Error("no results")
+		return
 	}
 
 	rator := results.GetEnumerator()

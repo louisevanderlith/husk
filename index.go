@@ -1,7 +1,6 @@
 package husk
 
 import (
-	"fmt"
 	"sort"
 )
 
@@ -71,9 +70,6 @@ func (m *index) Delete(k Key) bool {
 
 	copy(m.Keys[idxKey:], m.Keys[idxKey+1:])
 	m.Keys = m.Keys[:len(m.Keys)-1]
-
-	fmt.Printf("disable %v :: %+v", k, m)
-
 	m.Total--
 
 	return true
