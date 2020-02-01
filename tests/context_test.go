@@ -26,10 +26,10 @@ func DestroyData() {
 }
 
 func TestDiscover_ListNames(t *testing.T){
-	exp := []string{"People"}
+	exp := []string{"People", "Users"}
 	act := husk.TableNames(ctx)
 
-	if len(act) != 1 {
+	if len(act) != len(exp) {
 		t.Error("invalid length discovered")
 		return
 	}
@@ -42,12 +42,16 @@ func TestDiscover_ListNames(t *testing.T){
 func TestDiscover_ListLayouts(t *testing.T){
 	act := husk.TableLayouts(ctx)
 
-	if len(act) != 1 {
+	if len(act) != 2 {
 		t.Error("invalid length discovered")
 		return
 	}
 
 	if act["People"] == nil {
+		t.Errorf("no object found %v", act)
+	}
+
+	if act["Users"] == nil {
 		t.Errorf("no object found %v", act)
 	}
 }
@@ -233,16 +237,28 @@ func TestFind_FindFilteredItems(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := ctx.People.FindFirst(sample.ByName("Sarel"))
-	//result := ctx.People.Find(1, 3, husk.Everything())
+	result, err := ctx.People.Find(1, 3, sample.ByName("Sarel"))
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	if result.GetKey() != set.Record.GetKey() {
-		t.Errorf("Wrong ID, Expected %v, got %v", set.Record.GetKey(), result.GetKey())
+	if !result.Any(){
+		t.Error("no results")
+	}
+
+	itor := result.GetEnumerator()
+	matchFound := false
+	for itor.MoveNext() {
+		if itor.Current().GetKey() == set.Record.GetKey() {
+			matchFound = true
+			break
+		}
+	}
+
+	if !matchFound {
+		t.Error("no matches found")
 	}
 }
 
@@ -252,11 +268,25 @@ func TestCalc_SumTotalBalance(t *testing.T) {
 	ctx.People.Calculate(&bal, sample.SumBalance())
 
 	t.Log(bal)
-	t.Fail()
 	if bal == 0 {
 		t.Error("balance not updated")
 	}
 }
+
+
+func TestUsers_FindEverything(t *testing.T) {
+	rset, err := ctx.Users.Find(1, 10, husk.Everything())
+
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
+	if !rset.Any() {
+		t.Error("no data found")
+	}
+}
+
 
 func TestCalc_FindLowestBalance(t *testing.T) {
 	name := ""
@@ -264,7 +294,7 @@ func TestCalc_FindLowestBalance(t *testing.T) {
 	ctx.People.Calculate(&name, sample.LowestBalance())
 
 	if name != "Kelley" {
-		t.Errorf("name not found, got %s", name)
+		t.Errorf("name Kelley not found, got %s", name)
 	}
 }
 
@@ -297,7 +327,12 @@ func TestFilter_FindWarden_MustBe10(t *testing.T) {
 		Name:     "Warden",
 		Age:      22,
 	}
-	records := ctx.People.Find(1, 11, sample.ByObject(parm))
+	records, err := ctx.People.Find(1, 11, sample.ByObject(parm))
+
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
 
 	if records.Count() != 10 {
 		t.Errorf("Expected %d records, got %d", 10, records.Count())
@@ -310,7 +345,12 @@ func TestFilter_FindWarden_MustBeByFields(t *testing.T) {
 		Age:      22,
 	}
 
-	records := ctx.People.Find(1, 10, husk.ByFields(parm))
+	records, err := ctx.People.Find(1, 10, husk.ByFields(parm))
+
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
 
 	enumer := records.GetEnumerator()
 	for enumer.MoveNext() {
@@ -323,7 +363,12 @@ func TestFilter_FindWarden_MustBeByFields(t *testing.T) {
 }
 
 func TestFilter_FindEverything_MustBe1000(t *testing.T) {
-	records := ctx.People.Find(1, 1000, husk.Everything())
+	records, err := ctx.People.Find(1, 1000, husk.Everything())
+
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
 
 	if records.Count() != 1000 {
 		t.Errorf("Expecting 1000, got %d", records.Count())
@@ -331,7 +376,13 @@ func TestFilter_FindEverything_MustBe1000(t *testing.T) {
 }
 
 func TestRecordSet_ToJSON_MustBeClean(t *testing.T) {
-	rows := ctx.People.Find(1, 5, husk.Everything())
+	rows , err := ctx.People.Find(1, 5, husk.Everything())
+
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
 	bits, _ := json.Marshal(rows)
 
 	if strings.Contains(string(bits), "Value") {

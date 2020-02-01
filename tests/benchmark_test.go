@@ -16,7 +16,12 @@ func init() {
 }
 
 func BenchmarkFilter_PerfectBalance(b *testing.B) {
-	set := benchCtx.People.Find(1, 10, sample.SameBalance(30321.12))
+	set, err := benchCtx.People.Find(1, 10, sample.SameBalance(30321.12))
+
+	if err != nil {
+		b.Error(err)
+		return
+	}
 
 	itor := set.GetEnumerator()
 
