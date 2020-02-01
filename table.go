@@ -73,7 +73,7 @@ func (t Table) FindByKey(key Key) (Recorder, error) {
 }
 
 //Find returns a Collection of records matching the applied filter function.
-func (t Table) Find(page, pageSize int, filter Filterer) Collection {
+func (t Table) Find(page, pageSize int, filter Filterer) (Collection, error) {
 	result := NewRecordSet(page)
 	skipCount := (page - 1) * pageSize
 
@@ -83,7 +83,7 @@ func (t Table) Find(page, pageSize int, filter Filterer) Collection {
 		err := t.tape.Read(meta.Point(), &dInf)
 
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		dataObj := dInf.(Dataer)
@@ -100,12 +100,16 @@ func (t Table) Find(page, pageSize int, filter Filterer) Collection {
 		}
 	}
 
-	return result
+	return result, nil
 }
 
 //FindFirst will return that first record that matches the 'filter'
 func (t Table) FindFirst(filter Filterer) (Recorder, error) {
-	res := t.Find(1, 1, filter)
+	res, err := t.Find(1, 1, filter)
+
+	if err != nil {
+		return nil, err
+	}
 
 	rator := res.GetEnumerator()
 	if !rator.MoveNext() {
@@ -237,7 +241,6 @@ func (t Table) Save() error {
 
 //Seed will load the seedfile into the husk database ONLY if it's empty.
 func (t Table) Seed(seedfile string) error {
-
 	if !t.Exists(Everything()) {
 		result := reflect.New(reflect.SliceOf(t.t)).Interface()
 

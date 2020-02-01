@@ -7,7 +7,7 @@ type Tabler interface {
 	//FindByKey finds a record with a matching key.
 	FindByKey(key Key) (Recorder, error)
 	//Find looks for records that match the filter.
-	Find(page, pageSize int, filter Filterer) Collection
+	Find(page, pageSize int, filter Filterer) (Collection, error)
 	//FindFirst does what Find does, but will only return one record.
 	FindFirst(filter Filterer) (Recorder, error)
 	//Calculate can modify a result set with data values

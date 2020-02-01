@@ -7,20 +7,28 @@ import (
 
 type Context struct {
 	People husk.Tabler
-	//Names  husk.Tabler
+	Users  husk.Tabler
 }
 
 func NewContext() Context {
 	result := Context{}
 
 	result.People = husk.NewTable(Person{}, serials.GobSerial{})
-	//result.Names = husk.NewTable(Name{}, &serials.StringSerial{})
+	result.Users = husk.NewTable(User{}, serials.GobSerial{})
 
 	return result
 }
 
 func (ctx Context) Seed() {
-	err := ctx.People.Seed("people.seed.json")
+	err := ctx.Users.Seed("users.seed.json")
+
+	if err != nil {
+		panic(err)
+	}
+
+	ctx.Users.Save()
+
+	err = ctx.People.Seed("people.seed.json")
 
 	if err != nil {
 		panic(err)
