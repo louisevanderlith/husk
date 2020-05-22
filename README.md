@@ -1,54 +1,58 @@
-# Husk DB-Engine [![CodeFactor](https://www.codefactor.io/repository/github/louisevanderlith/husk/badge)](https://www.codefactor.io/repository/github/louisevanderlith/husk)
-Husk was designed to be used directly by Webservice and API based applications.
-The amount of traffic would then be limited by the amount of requests your API can handle, instead of how-many the Database server can take.
+# Husk Database Engine [![CodeFactor](https://www.codefactor.io/repository/github/louisevanderlith/husk/badge)](https://www.codefactor.io/repository/github/louisevanderlith/husk)
+Husk was designed to be used directly by Webservice and API based applications without the need for an external storage provider.
 
-Thie engine attempts to force users to keep business logic close to their required objects, and minimizes entry points and chances for loop holes. ie. when a developer accesses or modifies data outside of the intended scope. 
+## Table of Contents
+* What is HuskDB?
+* Setup and Installation
+* Creating Table/Structure
+* Preparing Seed Data
+* Operations
+    * Create
+    * Read
+    * Update
+    * Delete
+    * Calculate
+* Working with Collections
+* Advantages over traditional SQL
+* hsk Tags
+* Benchmarks
+
+### What is HuskDB
+Husk database is an embedded, object-oriented data store which uses Go to interact with records.
+It is meant to be used by small webservices which fully control the data it hosts.
+
+This engine attempts to force users to keep business logic close to their required objects, and minimizes entry points and chances for loop holes. ie. when a developer accesses or modifies data outside of the intended scope. 
 
 This includes many sources; 
 * Directly modifying data via an external tool. (SQL Server Management Studio, WorkBench, Toad, etc.)
 * Able to access core "Database" API in higher-level code, rather than the Logic Layer as intended.  (Front-end, Public facing API End-points)
 * Editing the data file directly.
 
-All records are internally sorted by their creation Timestamp, and then their traditional "ID".
-This combination is refered to as a 'Key'.
+Creation timestamps sort records internally, and thereafter their traditional "ID".
+The 'Key' is created from the combination of timestamp and id "0`0".
 The Key allows the index to sort the records by creation date, by default. 
 This creates faster access to the most recent records and removes need for sorting after every query.
 
-The database engine works similiar to ISAM, as it stores data on a sequential "tape" which lives in memory and on disk.
+The database engine works similar to ISAM, as it stores data on a sequential "tape" which lives on disk and held in memory.
 Husk uses an index with pointers to the actual location on the tape for faster access.
 
-# Advantages over traditional databases.
-* Results are always sorted by Creation Date in descending order, as this is part of the Primary Key. Quite husk.Key
-* Pagesize (Current page and results per page) has to be specified for collection results.
-* Database embedded into application.
-* Doesn't require a "ConnectionString"
-* Works nicely with Unit Tests and TDD
-* Seed files are JSON, so other systems can easily be migrated
-* No SELECT or any kind Query language. Go only.
-* Filter using Go functions.
-* Objects are "Serialization" aware, and columns like 'Password' can easily be hidden using `json:"-"`
-* Everything related to an object will always remain nested within that object. 
+### Setup and Installation
+As HuskDB is a library, which can simply be imported into any Go project.
 
-# Benchmark History:
-Please note these numbers come from our Sample_ETL test, which inserts the same record(16kb) for 20seconds (This function has since been deprecated. We will have to write a better benchmark)
-* 0.1 (One Record, One File) Write: 138rec/s
-* 0.2 (BigFile) Write: 509rec/s (x3.6)
-* 0.3 (Dump Index only on save) Write: 1463rec/s (x3)
-* 0.4 (Better File handling) Write: 1221rec/s (0%)
-* 0.5 (Index Refactor, keys are Ptrs, improved read) Write: 2315rec/s (x2)
-* 0.6 (Key isn't a pointer anymore) 4314rec/s
+To download the Husk module, run;
 
-# Average performance
-* MAC 3167rec/s (Unicorn Power)
-* WINDOWS 2315/rec/s (Spinning Disk, AMD)
-* LINUX 2289rec/s (SSD, Intel i5(2nd gen))
+```$ go get -u github.com/louisevanderlith/husk```
 
-# Database Engine
-* Data-orientation and clustering
+After installing the latest module, all that is required is to create a Table/Structure for your data. The following 
+section will provide information on setting up the Table.
 
-# Setting up a database
-Create a Table Object
-```go 
+More usage examples can be found under the /tests folder.
+
+### Creating Table/Structure
+* Define data object
+Any type which has the 'Valid()' function, qualifies as a data object, and can be used as a Tabler.
+
+```go
 package sample
 
 import "github.com/louisevanderlith/husk"
@@ -60,80 +64,229 @@ type Person struct {
 	Accounts []Account
 }
 
-//Valid - To qualify as a Data Record, a struct MUST have a Valid function
+//Valid - To qualify as a Data Record, 
+//a struct MUST have a Valid function
 func (o Person) Valid() (bool, error) {
 	return husk.ValidateStruct(&o)
 }
 ```
+In this sample, we create a "Person" object which holds Name, Age and Account information.
 
-Create a context for quick access to Tables
+The Name property can only have a value which has a maximum length of 50characters. More information in `hsk` tags can be found later in this document.
+
+* Create a context for the structure
 ```go
-package sample
+    package sample
+    
+    import (
+        "github.com/louisevanderlith/husk"
+        "github.com/louisevanderlith/husk/serials"
+    )
+    
+    //Context holds the Tables we want to access
+    type Context struct {
+        //People table 
+        People husk.Tabler
+    }
+    
+    // NewContext returns the context object with Table values initialized
+    func NewContext() Context {
+        result := Context{}
+    
+        //Creats a new "Person" Table, with GobSerializer
+        result.People = husk.NewTable(Person{}, serials.GobSerial{})
+    
+        return result
+    }
+```
 
-import "github.com/louisevanderlith/husk"
+We now have a context which can be utilised by our application
 
-//Context holds the Tables we have access to 
-type Context struct {
-	//People table 
-	People husk.Tabler
-}
+### Preparing Seed Data
+Husk is able to import seed data via a JSON file.
+* Create seed file (people.seed.json) in a folder named 'db'
+* Populate seed data.
+    Seed data should be provided as a JSON array. 
+    Example;
+    ```json
+    [
+        {
+            "Name": "Charlie",
+            "Age": 23,
+            "Accounts": [{"Number": 1234500,"Balance": 0.10, "Transactions": []}]
+        },
+        {
+            "Name": "Mike",
+            "Age": 48,
+            "Accounts": [{"Number": 1234501,"Balance": 99.10, "Transactions": []}]
+        }
+    ]
+  ```
+* Call the Seed function on structures to populate the table
 
-func NewContext() Context {
-	result := Context{}
+```go 
+    func (ctx Context) Seed() {
+        //Seed files can be specified, so that we have data to boot.
+        err := ctx.People.Seed("people.seed.json")
+    
+        if err != nil {
+            panic(err)
+        }
+    
+        ctx.People.Save()
+    }
+```
 
-	//Creats a new "Person" Table
-	result.People = husk.NewTable(new(Person))
+### Operations
+* Create
+Records can be created by providing an object to the Create function.
+Husk also supports .CreateMulti which can be used to create many records at once.
+```go
+    p := sample.Person{Name: "Jimmy", Age: 25}
+    
+    //Send the object to the context for creation
+    set := ctx.People.Create(p)
+    
+    if set.Error != nil {
+        t.Error(set.Error)
+    }
+    
+    //Persist the changes
+    ctx.People.Save()
+```
 
-	return result
-}
+* Read
 
-func (ctx Context) Seed() {
-	//Seed files can be specified, so that we have data to boot.
-	err := ctx.People.Seed("people.seed.json")
+Records can be located using various methods:
+    
+1. By Key
+    
+This is the fastest way to locate a record
+    
+```go
+    //parse the string representation of the key to an actual husk.Key
+    k, err := husk.ParseKey("0`0")
+    
+    //find the record with the key
+    rec, err := ctx.People.FindByKey(key)
+```
+    
+2. By Filter
+    
+Filters can be defined as functions which return true/false depending on the conditions.
+Husk also provides a default filter "husk.Everything" which can be used to return all records.
+    
+```go
+    type personFilter func(obj Person) bool
+    
+    func (f personFilter) Filter(obj husk.Dataer) bool {
+        return f(obj.(Person))
+    }
+    
+    func ByName(name string) personFilter {
+        return func(obj Person) bool {
+            return obj.Name == name
+        }
+    }
+```
 
-	if err != nil {
-		panic(err)
+Operations that find records always have to supply page size and index.
+FindFirst is a shortcut for Find(1,1, filter)
+```go
+    //Find People 'ByName', but I only want the first 3 matches
+    result := ctx.People.Find(1, 3, ByName("Jimmy"))
+    
+    //Find 'All' People, but I only want the first 3 matches
+    result = ctx.People.Find(1, 3, husk.Everything())
+```
+
+* Update
+
+```go
+    //First find the desired record, in this case "ByKey"
+    p, _ := ctx.People.FindByKey(key)
+    p.Age = 87
+    
+    ctx.People.Update(p)
+    
+    //Persist the changes
+    ctx.People.Save()
+```
+* Delete
+
+Records can be deleted directly from the database by providing the key of the record to be removed.
+```go
+    //Provide the key to the delete function
+    err := ctx.People.Delete(key)
+    
+    //Persist the changes
+    ctx.People.Save()
+```
+
+* Calculate
+
+This function can be used in multiple ways to generate datasets.
+There is no concept of "SELECT" in Husk, but it still provides a way of creating custom datasets. 
+When thinking in terms of traditional SQL, this would be a Stored Procedure.
+The calculate function could be used to generate custom datasets.  
+
+Calculators can be defined in the same way as Filters, as they function in exactly the same manner. 
+For this reason, we can chain Filters and Calculators to narrow result sets.
+
+```go
+    type personCalc func(result interface{}, obj Person) error
+    
+    // Calc can take a pointer to a result, and update it with values found in the data obj
+    func (f personCalc) Calc(result interface{}, obj husk.Dataer) error {
+        return f(result, obj.(Person))
+    }
+``` 
+
+In the following example we want to get the Total value of a Person's Accounts.
+
+```go
+// SumBalance will return the SUM Balance of a Person's Accounts
+func SumBalance() personCalc {
+	return func(result interface{}, obj Person) error {
+		answ := float32(0)
+		for _, acc := range obj.Accounts {
+			answ += acc.Balance
+		}
+
+		totl := result.(*float32)
+		*totl += answ
+
+		return nil
 	}
-
-	ctx.People.Save()
 }
 ```
 
-## Using the table
-Create a record
+This example shows how we can get the Lowest Valued Account
 ```go
-p := sample.Person{Name: "Jan", Age: 25}
+func LowestBalance() personCalc {
+	min := float32(9999999)
+	return func(result interface{}, obj Person) error {
+        // We can utilise previously defined functions
+        balnce := float32(0)
+		err := SumBalance(&balnce)
+        
+		if answ < min {
+			min = answ
+			n := result.(*string)
+			*n = obj.Name
+		}
 
-//Send in the object to Create
-set := ctx.People.Create(p)
-
-if set.Error != nil {
-	t.Error(set.Error)
+		return nil
+	}
 }
-
-//Persist the changes
-ctx.People.Save()
 ```
 
-Find and update
-```go
-//Find by it's Key
-person, _ := ctx.People.FindByKey(key)
-person.Age = 87
-
-ctx.People.Update(person)
-
-//Persist the changes
-ctx.People.Save()
-```
-Working with collections
+### Working with Collections
+After finding records, you may want to iterate over them to perform other operations.
+Husk provides a way of enumerating these collections.
 ```go
 //Find 'Everything', but I only want the first 3
 result := ctx.People.Find(1, 3, husk.Everything())
-
-if result == nil {
-	return
-}
 
 //Gets the iterable collection
 rator := result.GetEnumerator()
@@ -145,35 +298,56 @@ for rator.MoveNext() {
 
 	log.Printf("$v\n", someone)
 }
-```
+``` 
 
-Creating filters for records
-```go
-//Specify a Data Filter for the given Record
-type personFilter func(obj Person) bool
+### Advantages over traditional SQL
+Husk doesn't use any Query language, and all data manipulation happens via the code. 
+The immediately avoids SQL injection attacks, and narrows the points of entry.
 
-//Filter is called by Husk, but casted to the correct type.
-func (f personFilter) Filter(obj husk.Dataer) bool {
-	return f(obj.(Person))
-}
+* No SELECT, Datasets are 'Calculated' and relates more to Stored Procedures, but written in Go.
+* No WHERE Filter using Go functions. Functions can be easily tested and compile with the application.
+* Index Keys are separate from Data, and should only be used to Identify records and create relationships across micro-services.   
+* The database stores records in descending order of creation.  
+* The Primary Key consists of a Timestamp and ID. Quite husk.Key
+* Querying collections always require the 'pagesize' (current page and results per page) to be specified.
+    This forces the developer to always limit the amount of data returned, thus reducing query times.
+* Database embedded into application, no externally hosted services. Greatly reduces the attack surface of the data. 
+* Doesn't require a "ConnectionString"
+* TDD and Unit Tests can use Husk to create tables that work with the logic. Object-Oriented approach to working with data.
+* Tables can be mapped directly to JSON structures. Big JSON files can be easily analysed.
+* Seed files are JSON documents, so other systems can easily be migrated.  
+* Objects are "Serialization" aware, and columns like 'Password' can easily be hidden using `json:"-"`
+* Everything related to an object will always remain nested within that object.
+* Database will only consist of one or two tables, micro-services should only control one part of a system.
 
-//Filter People by their Name
-func ByName(name string) personFilter {
-	return func(obj Person) bool {
-		return obj.Name == name
-	}
-}
+### Benchmarks
+History:
+Please note these numbers come from our Sample_ETL test, which inserts the same record(16kb) for 20seconds 
+(This function has since been deprecated, and a better benchmark is yet to be written)
+* v1.0.1 Write: 138rec/s
+Every record saved creates a new file. Very slow read, and write.
 
-//Filter for searching by Balance on Accounts
-func SameBalance(balance float32) personFilter {
-	return func(obj Person) bool {
-		for _, v := range obj.Accounts {
-			if v.Balance == balance {
-				return true
-			}
-		}
+* v1.0.2 Write: 509rec/s (x3.6 improvement)
+One file stores all records. Greatly improves reads. 
 
-		return false
-	}
-}
-```
+* v1.0.3 Write: 1463rec/s (x3 improvement)
+Index file will only be updated on disk when the context gets saved.
+
+* v1.0.4 Write: 1221rec/s (x1 improvement)
+File operations improved. 
+
+* v1.0.5 Write: 2315rec/s (x2 improvement)
+Indexing logic refactored and Keys changed to Pointers. Improved reading.
+
+* v1.0.6 Write: 4314rec/s (x2 improvement)
+Keys are no longer Pointers.
+
+* v1.0.7 Write: Unknown
+General improvements
+
+Average Write Performance:
+
+* MAC 3167rec/s (Unicorn Power)
+* WINDOWS 2315/rec/s (Spinning Disk, AMD)
+* LINUX 2289rec/s (SSD, Intel i5(2nd gen))
+
