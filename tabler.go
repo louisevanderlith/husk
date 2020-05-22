@@ -15,13 +15,13 @@ type Tabler interface {
 	//Exists confirms the existence of a record
 	Exists(filter Filterer) bool
 	//Create saves a new object to the database
-	Create(objs Dataer) CreateSet
+	Create(obj Dataer) CreateSet
 	//CreateMulti saves multiple records, then commits to the database.
-	CreateMulti(obj ...Dataer) []CreateSet
+	CreateMulti(objs ...Dataer) []CreateSet
 	//Update records changes made to a record.
-	Update(records Recorder) error
+	Update(record Recorder) error
 	//Delete removes a record with the matching key.
-	Delete(keys Key) error
+	Delete(key Key) error
 
 	//Writes data to disk.
 	Save() error
