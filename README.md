@@ -270,8 +270,8 @@ func LowestBalance() personCalc {
         balnce := float32(0)
 		err := SumBalance(&balnce)
         
-		if answ < min {
-			min = answ
+		if balnce < min {
+			min = balnce
 			n := result.(*string)
 			*n = obj.Name
 		}
@@ -319,6 +319,11 @@ The immediately avoids SQL injection attacks, and narrows the points of entry.
 * Objects are "Serialization" aware, and columns like 'Password' can easily be hidden using `json:"-"`
 * Everything related to an object will always remain nested within that object.
 * Database will only consist of one or two tables, micro-services should only control one part of a system.
+
+### hsk Tags
+Husk supports a limited set of tags which can be added to properties.
+`hsk:"null"` - This property may be empty, and is not required.
+`hsk:"size(50)"` - Limits the length of the value to 50 characters.
 
 ### Benchmarks
 History:
