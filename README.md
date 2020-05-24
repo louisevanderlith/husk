@@ -2,20 +2,20 @@
 Husk was designed to be used directly by Webservice and API based applications without the need for an external storage provider.
 
 ## Table of Contents
-* What is HuskDB?
-* Setup and Installation
-* Creating Table/Structure
-* Preparing Seed Data
-* Operations
+* [What is HuskDB?](#what-is-huskdb)
+* [Setup and Installation](#setup-and-installation)
+* [Creating Table/Structure](#creating-tablestructure)
+* [Preparing Seed Data](#preparing-seed-data)
+* [Operations](#operations)
     * Create
     * Read
     * Update
     * Delete
     * Calculate
-* Working with Collections
-* Advantages over traditional SQL
-* hsk Tags
-* Benchmarks
+* [Working with Collections](#working-with-collections)
+* [Advantages over traditional SQL](#advantages-over-traditional-sql)
+* [hsk Tags](#hsk-tags)
+* [Benchmarks](#benchmarks)
 
 ### What is HuskDB
 Husk database is an embedded, object-oriented data store which uses Go to interact with records.
@@ -228,7 +228,6 @@ Records can be deleted directly from the database by providing the key of the re
 This function can be used in multiple ways to generate datasets.
 There is no concept of "SELECT" in Husk, but it still provides a way of creating custom datasets. 
 When thinking in terms of traditional SQL, this would be a Stored Procedure.
-The calculate function could be used to generate custom datasets.  
 
 Calculators can be defined in the same way as Filters, as they function in exactly the same manner. 
 For this reason, we can chain Filters and Calculators to narrow result sets.
@@ -322,33 +321,37 @@ The immediately avoids SQL injection attacks, and narrows the points of entry.
 
 ### hsk Tags
 Husk supports a limited set of tags which can be added to properties.
-`hsk:"null"` - This property may be empty, and is not required.
-`hsk:"size(50)"` - Limits the length of the value to 50 characters.
+* `hsk:"null"` - This property may be empty, and is not required.
+* `hsk:"size(50)"` - Limits the length of the value to 50 characters.
 
 ### Benchmarks
 History:
-Please note these numbers come from our Sample_ETL test, which inserts the same record(16kb) for 20seconds 
-(This function has since been deprecated, and a better benchmark is yet to be written)
+Please note these numbers come from our Sample_ETL test, which inserts the same record(16kb) for 20seconds.  
+This function has since been deprecated, and a better benchmark is yet to be written.
 * v1.0.1 Write: 138rec/s
-Every record saved creates a new file. Very slow read, and write.
+    Every record saved creates a new file. Very slow read, and write.
 
 * v1.0.2 Write: 509rec/s (x3.6 improvement)
-One file stores all records. Greatly improves reads. 
+    One file stores all records. Greatly improves reads. 
 
 * v1.0.3 Write: 1463rec/s (x3 improvement)
-Index file will only be updated on disk when the context gets saved.
+    Index file will only be updated on disk when the context gets saved.
 
 * v1.0.4 Write: 1221rec/s (x1 improvement)
-File operations improved. 
+
+    File operations improved. 
 
 * v1.0.5 Write: 2315rec/s (x2 improvement)
-Indexing logic refactored and Keys changed to Pointers. Improved reading.
+
+    Indexing logic refactored and Keys changed to Pointers. Improved reading.
 
 * v1.0.6 Write: 4314rec/s (x2 improvement)
-Keys are no longer Pointers.
+
+    Keys are no longer Pointers.
 
 * v1.0.7 Write: Unknown
-General improvements
+
+    General improvements
 
 Average Write Performance:
 

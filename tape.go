@@ -63,7 +63,7 @@ func (t *tape) Write(obj interface{}) (*Point, error) {
 	}
 
 	if wrote != len(byts) {
-		return nil, fmt.Errorf("Incomplete write. %v - %v", wrote, len(byts))
+		return nil, fmt.Errorf("incomplete write. %v - %v", wrote, len(byts))
 	}
 
 	written := int64(wrote)
