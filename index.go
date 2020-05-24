@@ -2,6 +2,7 @@ package husk
 
 import (
 	"sort"
+	"time"
 )
 
 //Index is sorted by EPOCH Time DESC
@@ -9,7 +10,6 @@ type index struct {
 	Values map[Key]*meta
 	Keys   []Key
 	Indx   int
-	Total  int64
 }
 
 func loadIndex(indexName string) Indexer {
@@ -21,9 +21,22 @@ func loadIndex(indexName string) Indexer {
 
 // CreateSpaces generates a new Key and returns Meta
 func (m *index) CreateSpace(point *Point) *meta {
-	key := NewKey(m.Total)
+	key := m.getNextKey()
 
 	return newMeta(key, point)
+}
+
+//getNextKey returns the next available key
+func (m *index) getNextKey() Key {
+	timestamp := time.Now().Unix()
+	count := int64(0)
+	for _, k := range m.Keys {
+		if k.Stamp == timestamp {
+			count++
+		}
+	}
+
+	return Key{timestamp, count}
 }
 
 /// Create new entry in this index that maps key K to value V
@@ -33,8 +46,6 @@ func (m *index) Insert(v *meta) {
 	//key in-front
 	tmp := []Key{v.GetKey()}
 	m.Keys = append(tmp, m.Keys...)
-
-	m.Total++
 }
 
 /// Find an entry by key, returns nil of not found or not active
@@ -70,11 +81,11 @@ func (m *index) Delete(k Key) bool {
 
 	copy(m.Keys[idxKey:], m.Keys[idxKey+1:])
 	m.Keys = m.Keys[:len(m.Keys)-1]
-	m.Total--
 
 	return true
 }
 
+// Items returns Active records
 func (m *index) Items() map[Key]*meta {
 	result := make(map[Key]*meta)
 
