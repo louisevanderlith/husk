@@ -45,7 +45,7 @@ func NewTable(obj Dataer, serial Serializer) Tabler {
 	}
 }
 
-func (t Table) Type() reflect.Type{
+func (t Table) Type() reflect.Type {
 	return t.t
 }
 
