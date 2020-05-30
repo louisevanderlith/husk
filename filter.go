@@ -31,7 +31,7 @@ func ByFields(param Dataer) filter {
 		objFields := GetFields(obj)
 		for k, v := range parmFields {
 
-			if !reflect.ValueOf(v).IsZero() && !reflect.DeepEqual(objFields[k],v) {
+			if !reflect.ValueOf(v).IsZero() && !reflect.DeepEqual(objFields[k], v) {
 				return false
 			}
 		}
