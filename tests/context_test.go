@@ -25,7 +25,7 @@ func DestroyData() {
 	}
 }
 
-func TestDiscover_ListNames(t *testing.T){
+func TestDiscover_ListNames(t *testing.T) {
 	exp := []string{"People", "Users"}
 	act := husk.TableNames(ctx)
 
@@ -39,7 +39,7 @@ func TestDiscover_ListNames(t *testing.T){
 	}
 }
 
-func TestDiscover_ListLayouts(t *testing.T){
+func TestDiscover_ListLayouts(t *testing.T) {
 	act := husk.TableLayouts(ctx)
 
 	if len(act) != 2 {
@@ -244,7 +244,7 @@ func TestFind_FindFilteredItems(t *testing.T) {
 		return
 	}
 
-	if !result.Any(){
+	if !result.Any() {
 		t.Error("no results")
 	}
 
@@ -273,7 +273,6 @@ func TestCalc_SumTotalBalance(t *testing.T) {
 	}
 }
 
-
 func TestUsers_FindEverything(t *testing.T) {
 	rset, err := ctx.Users.Find(1, 10, husk.Everything())
 
@@ -286,7 +285,6 @@ func TestUsers_FindEverything(t *testing.T) {
 		t.Error("no data found")
 	}
 }
-
 
 func TestCalc_FindLowestBalance(t *testing.T) {
 	name := ""
@@ -324,8 +322,8 @@ func TestExsits_Any_MustTrue(t *testing.T) {
 
 func TestFilter_FindWarden_MustBe10(t *testing.T) {
 	parm := sample.Person{
-		Name:     "Warden",
-		Age:      22,
+		Name: "Warden",
+		Age:  22,
 	}
 	records, err := ctx.People.Find(1, 11, sample.ByObject(parm))
 
@@ -341,8 +339,8 @@ func TestFilter_FindWarden_MustBe10(t *testing.T) {
 
 func TestFilter_FindWarden_MustBeByFields(t *testing.T) {
 	parm := sample.Person{
-		Name:     "Warden",
-		Age:      22,
+		Name: "Warden",
+		Age:  22,
 	}
 
 	records, err := ctx.People.Find(1, 10, husk.ByFields(parm))
@@ -376,7 +374,7 @@ func TestFilter_FindEverything_MustBe1000(t *testing.T) {
 }
 
 func TestRecordSet_ToJSON_MustBeClean(t *testing.T) {
-	rows , err := ctx.People.Find(1, 5, husk.Everything())
+	rows, err := ctx.People.Find(1, 5, husk.Everything())
 
 	if err != nil {
 		t.Fatal(err)

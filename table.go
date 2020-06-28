@@ -45,7 +45,7 @@ func NewTable(obj Dataer, serial Serializer) Tabler {
 	}
 }
 
-func (t Table) Type() reflect.Type{
+func (t Table) Type() reflect.Type {
 	return t.t
 }
 
@@ -128,14 +128,10 @@ func (t Table) Exists(filter Filterer) bool {
 
 //Create adds a new data object to the collection.
 func (t Table) Create(obj Dataer) CreateSet {
-	valid, err := obj.Valid()
+	err := obj.Valid()
 
 	if err != nil {
 		return CreateSet{nil, err}
-	}
-
-	if !valid {
-		return CreateSet{nil, errors.New("validation failed")}
 	}
 
 	point, err := t.tape.Write(obj)
@@ -176,18 +172,22 @@ func (t Table) Update(record Recorder) error {
 		return errors.New("data is empty")
 	}
 
-	valid, err := data.Valid()
+	err := data.Valid()
 
-	if valid {
-		meta := record.Meta()
-		point, err := t.tape.Write(data)
-
-		if err == nil {
-			meta.Updated(point)
-		}
+	if err != nil {
+		return err
 	}
 
-	return err
+	meta := record.Meta()
+	point, err := t.tape.Write(data)
+
+	if err != nil {
+		return err
+	}
+
+	meta.Updated(point)
+
+	return nil
 }
 
 //Delete marks the Record as Disabled and removes it from the index.
@@ -248,7 +248,7 @@ func (t Table) Seed(seedfile string) error {
 		byts, err := ioutil.ReadFile(seedfile)
 
 		if err != nil {
-			return nil
+			return err
 		}
 
 		buffer := bytes.NewBuffer(byts)
@@ -262,7 +262,11 @@ func (t Table) Seed(seedfile string) error {
 
 		for i := 0; i < val.Len(); i++ {
 			item := val.Index(i).Interface()
-			t.Create(item.(Dataer))
+			cset := t.Create(item.(Dataer))
+
+			if cset.Error != nil {
+				return cset.Error
+			}
 		}
 	}
 

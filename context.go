@@ -11,7 +11,7 @@ type Ctxer interface {
 }
 
 // TableNames returns the names of all the tables found within the given context
-func TableNames(ctx Ctxer) []string{
+func TableNames(ctx Ctxer) []string {
 	var result []string
 
 	val := reflect.ValueOf(ctx)

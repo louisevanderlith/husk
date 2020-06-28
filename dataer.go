@@ -11,12 +11,12 @@ import (
 //Dataer is the primary interface that any "model" should implement
 //"Models" are data objects used to store and structure records in tables.
 type Dataer interface {
-	Valid() (bool, error)
+	Valid() error
 }
 
 // ValidateStruct will read 'hsk' tags on properties, to validate their values
 // Properties without the 'hsk' tag, will be considered 'Required'
-func ValidateStruct(obj interface{}) (bool, error) {
+func ValidateStruct(obj interface{}) error {
 	var issues []string
 
 	val := reflect.ValueOf(obj).Elem()
@@ -41,12 +41,9 @@ func ValidateStruct(obj interface{}) (bool, error) {
 		}
 	}
 
-	var err error
-	isValid := len(issues) < 1
-
-	if !isValid {
-		err = errors.New(strings.Join(issues, "\r\n"))
+	if len(issues) != 0 {
+		return errors.New(strings.Join(issues, "\r\n"))
 	}
 
-	return isValid, err
+	return nil
 }

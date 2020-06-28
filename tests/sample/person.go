@@ -8,6 +8,6 @@ type Person struct {
 	Accounts []Account
 }
 
-func (o Person) Valid() (bool, error) {
+func (o Person) Valid() error {
 	return husk.ValidateStruct(&o)
 }
