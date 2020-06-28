@@ -9,6 +9,6 @@ type Role struct {
 	Value    string `hsk:"size(100)"`
 }
 
-func (o Role) Valid() (bool, error) {
+func (o Role) Valid() error {
 	return husk.ValidateStruct(&o)
 }
