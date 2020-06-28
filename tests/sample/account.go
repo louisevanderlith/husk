@@ -7,6 +7,6 @@ type Account struct {
 	Balance float32
 }
 
-func (o Account) Valid() (bool, error) {
+func (o Account) Valid() error {
 	return husk.ValidateStruct(&o)
 }

@@ -32,9 +32,9 @@ func (r Record) Data() Dataer {
 
 //Set applies the value of 'obj' to the current record.
 func (r *Record) Set(obj Dataer) error {
-	valid, err := obj.Valid()
+	err := obj.Valid()
 
-	if err != nil || !valid {
+	if err != nil {
 		return err
 	}
 

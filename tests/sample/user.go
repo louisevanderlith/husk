@@ -16,16 +16,16 @@ type User struct {
 	Roles     []Role
 }
 
-func (u User) Valid() (bool, error) {
-	valid, common := husk.ValidateStruct(&u)
+func (u User) Valid() error {
+	err := husk.ValidateStruct(&u)
 
-	if !valid {
-		return false, common
+	if err != nil {
+		return err
 	}
 
 	if !strings.Contains(u.Email, "@") {
-		return false, errors.New("email is invalid")
+		return errors.New("email is invalid")
 	}
 
-	return true, nil
+	return nil
 }
