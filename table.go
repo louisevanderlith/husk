@@ -1,15 +1,13 @@
 package husk
 
 import (
-	"bytes"
 	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"reflect"
-
-	"github.com/louisevanderlith/husk/serials"
 )
 
 //Table controls the index and physical data tape for all records associated
@@ -21,7 +19,7 @@ type Table struct {
 }
 
 //NewTable returns a Table
-func NewTable(obj Dataer, serial Serializer) Tabler {
+func NewTable(obj Dataer) Tabler {
 	ensureDbDirectory()
 
 	t := reflect.TypeOf(obj)
@@ -34,14 +32,23 @@ func NewTable(obj Dataer, serial Serializer) Tabler {
 	idxName := getIndexName(name)
 	trackName := getRecordName(name)
 
-	ensureTableIndex(name, idxName)
-	index := loadIndex(idxName)
+	idxFile, err := openFile(idxName)
+
+	if err != nil {
+		panic(err)
+	}
+
+	index, err := loadIndex(idxFile)
+
+	if err != nil {
+		panic(err)
+	}
 
 	return Table{
 		t:     t,
 		name:  name,
 		index: index,
-		tape:  newTape(trackName, serial),
+		tape:  newTape(trackName),
 	}
 }
 
@@ -62,13 +69,13 @@ func (t Table) FindByKey(key Key) (Recorder, error) {
 
 	dObj := reflect.New(t.t)
 	dInf := dObj.Interface()
-	err := t.tape.Read(meta.Point(), &dInf)
+	err := t.tape.Read(meta.Point(), dInf)
 
 	if err != nil {
 		return nil, err
 	}
 
-	dataObj := dInf.(Dataer)
+	dataObj := dObj.Elem().Interface().(Dataer)
 	return MakeRecord(meta, dataObj), nil
 }
 
@@ -80,13 +87,13 @@ func (t Table) Find(page, pageSize int, filter Filterer) (Collection, error) {
 	for _, meta := range t.index.Items() {
 		dObj := reflect.New(t.t)
 		dInf := dObj.Interface()
-		err := t.tape.Read(meta.Point(), &dInf)
+		err := t.tape.Read(meta.Point(), dInf)
 
 		if err != nil {
 			return nil, err
 		}
 
-		dataObj := dInf.(Dataer)
+		dataObj := dObj.Elem().Interface().(Dataer)
 
 		if filter.Filter(dataObj) {
 			if skipCount == 0 && result.Count() < pageSize {
@@ -206,13 +213,13 @@ func (t Table) Calculate(result interface{}, calculator Calculator) error {
 	for _, meta := range t.index.Items() {
 		dObj := reflect.New(t.t)
 		dInf := dObj.Interface()
-		err := t.tape.Read(meta.Point(), &dInf)
+		err := t.tape.Read(meta.Point(), dInf)
 
 		if err != nil {
-			panic(err)
+			return err
 		}
 
-		dataObj := dInf.(Dataer)
+		dataObj := dObj.Elem().Interface().(Dataer)
 
 		if dataObj != nil {
 			err = calculator.Calc(result, dataObj)
@@ -244,15 +251,13 @@ func (t Table) Seed(seedfile string) error {
 	if !t.Exists(Everything()) {
 		result := reflect.New(reflect.SliceOf(t.t)).Interface()
 
-		jser := serials.JsonSerial{}
 		byts, err := ioutil.ReadFile(seedfile)
 
 		if err != nil {
 			return err
 		}
 
-		buffer := bytes.NewBuffer(byts)
-		err = jser.Decode(buffer, &result)
+		err = json.Unmarshal(byts, &result)
 
 		if err != nil {
 			return err
@@ -279,14 +284,4 @@ func ensureDbDirectory() {
 	if !created {
 		log.Println("couldn't create dbPath folder")
 	}
-}
-
-func ensureTableIndex(tableName, indexName string) bool {
-	created := createFile(indexName)
-
-	if !created {
-		log.Println("couldn't create index for " + tableName)
-	}
-
-	return created
 }
