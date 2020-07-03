@@ -2,7 +2,6 @@ package sample
 
 import (
 	"github.com/louisevanderlith/husk"
-	"github.com/louisevanderlith/husk/serials"
 )
 
 type Context struct {
@@ -13,8 +12,8 @@ type Context struct {
 func NewContext() Context {
 	result := Context{}
 
-	result.People = husk.NewTable(Person{}, serials.GobSerial{})
-	result.Users = husk.NewTable(User{}, serials.GobSerial{})
+	result.People = husk.NewTable(Person{})
+	result.Users = husk.NewTable(User{})
 
 	return result
 }
