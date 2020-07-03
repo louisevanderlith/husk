@@ -46,12 +46,14 @@ func read(filePath string, result interface{}) error {
 		return err
 	}
 
-	if len(byts) != 0 {
-		buffer := bytes.NewBuffer(byts)
-		err = gob.NewDecoder(buffer).Decode(result)
+	if len(byts) == 0 {
+		return errors.New("empty data file")
 	}
 
-	return err
+	buffer := bytes.NewBuffer(byts)
+	dec := gob.NewDecoder(buffer)
+
+	return dec.Decode(result)
 }
 
 func getDBIndexFiles() map[string]string {
