@@ -1,6 +1,7 @@
 package husk
 
 import (
+	"os"
 	"sort"
 	"time"
 )
@@ -12,11 +13,15 @@ type index struct {
 	Indx   int
 }
 
-func loadIndex(indexName string) Indexer {
+func loadIndex(indexFile *os.File) (Indexer, error) {
 	result := &index{Values: make(map[Key]*meta)}
-	read(indexName, result)
+	err := read(indexFile, result)
 
-	return result
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 // CreateSpaces generates a new Key and returns Meta

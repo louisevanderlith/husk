@@ -1,16 +1,12 @@
 package husk
 
 import (
-	"bytes"
 	"encoding/gob"
-	"errors"
+	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/louisevanderlith/husk/serials"
 )
 
 func init() {
@@ -23,37 +19,25 @@ func registerGobTypes() {
 }
 
 func write(filePath string, data interface{}) error {
-	created := createFile(filePath)
-
-	if !created {
-		return errors.New("unable to create " + filePath)
-	}
-
-	ser := serials.GobSerial{}
-	bytes, err := ser.Encode(data) //toBytes(data)
+	f, err := openFile(filePath)
 
 	if err != nil {
 		return err
 	}
 
-	return ioutil.WriteFile(filePath, bytes, 0644)
+	ser := gob.NewEncoder(f)
+	return ser.Encode(data)
 }
 
-func read(filePath string, result interface{}) error {
-	byts, err := ioutil.ReadFile(filePath)
+func read(f *os.File, result interface{}) error {
+	dec := gob.NewDecoder(f)
+	err := dec.Decode(result)
 
-	if err != nil {
-		return err
+	if err == io.EOF {
+		return nil
 	}
 
-	if len(byts) == 0 {
-		return errors.New("empty data file")
-	}
-
-	buffer := bytes.NewBuffer(byts)
-	dec := gob.NewDecoder(buffer)
-
-	return dec.Decode(result)
+	return err
 }
 
 func getDBIndexFiles() map[string]string {
@@ -62,7 +46,6 @@ func getDBIndexFiles() map[string]string {
 	files, err := ioutil.ReadDir(dbPath)
 
 	if err != nil {
-		log.Print("getDBIndexFiles ", err)
 		return result
 	}
 
@@ -78,22 +61,16 @@ func getDBIndexFiles() map[string]string {
 	return result
 }
 
-func createFile(filePath string) bool {
+func openFile(filePath string) (*os.File, error) {
 	_, err := os.Stat(filePath)
-	notexist := os.IsNotExist(err)
 
-	if notexist {
-		var file, err = os.Create(filePath)
-
-		if err != nil {
-			return false
-		}
-
-		notexist = false
-		defer file.Close()
+	if os.IsNotExist(err) {
+		return os.Create(filePath)
+	} else if err != nil {
+		return nil, err
 	}
 
-	return !notexist
+	return os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0644)
 }
 
 func createDirectory(folderPath string) bool {
