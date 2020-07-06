@@ -24,18 +24,16 @@ func newTape(trackname string) Taper {
 		panic(err)
 	}
 
-	return &tape{track}
+	return &tape{
+		track: track,
+	}
 }
 
 //Reads the data @point into obj
 func (t *tape) Read(point *Point, obj interface{}) error {
-	_, err := t.track.Seek(point.Offset, io.SeekStart)
+	r := io.NewSectionReader(t.track, point.Offset, point.Len)
 
-	if err != nil {
-		return err
-	}
-
-	serial := gob.NewDecoder(t.track)
+	serial := gob.NewDecoder(r)
 	return serial.Decode(obj)
 }
 

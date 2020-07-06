@@ -1,6 +1,7 @@
 package husk
 
 import (
+	"encoding/gob"
 	"os"
 	"sort"
 	"time"
@@ -15,7 +16,20 @@ type index struct {
 
 func loadIndex(indexFile *os.File) (Indexer, error) {
 	result := &index{Values: make(map[Key]*meta)}
-	err := read(indexFile, result)
+
+	inf, err := indexFile.Stat()
+
+	if err != nil {
+		return nil, err
+	}
+
+	// new index files, won't have anything to decode
+	if inf.Size() == 0 {
+		return result, nil
+	}
+
+	dec := gob.NewDecoder(indexFile)
+	err = dec.Decode(result)
 
 	if err != nil {
 		return nil, err

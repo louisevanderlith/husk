@@ -27,6 +27,7 @@ func NewTable(obj Dataer) Tabler {
 	if t.Kind() == reflect.Ptr {
 		panic("obj must not be a pointer")
 	}
+
 	gob.Register(obj)
 	name := t.Name()
 	idxName := getIndexName(name)
@@ -37,6 +38,8 @@ func NewTable(obj Dataer) Tabler {
 	if err != nil {
 		panic(err)
 	}
+
+	defer idxFile.Close()
 
 	index, err := loadIndex(idxFile)
 
@@ -56,6 +59,20 @@ func (t Table) Type() reflect.Type {
 	return t.t
 }
 
+func (t Table) readData(m *meta) (Recorder, error) {
+	dObj := reflect.New(t.t)
+	dInf := dObj.Interface()
+	err := t.tape.Read(m.Point(), dInf)
+
+	if err != nil {
+		return nil, err
+	}
+
+	obj := dObj.Elem().Interface().(Dataer)
+
+	return MakeRecord(m, obj), nil
+}
+
 //FindByKey returns a Record which has the same Key
 func (t Table) FindByKey(key Key) (Recorder, error) {
 	var result Recorder
@@ -67,16 +84,7 @@ func (t Table) FindByKey(key Key) (Recorder, error) {
 		return result, errors.New(msg)
 	}
 
-	dObj := reflect.New(t.t)
-	dInf := dObj.Interface()
-	err := t.tape.Read(meta.Point(), dInf)
-
-	if err != nil {
-		return nil, err
-	}
-
-	dataObj := dObj.Elem().Interface().(Dataer)
-	return MakeRecord(meta, dataObj), nil
+	return t.readData(meta)
 }
 
 //Find returns a Collection of records matching the applied filter function.
@@ -85,20 +93,15 @@ func (t Table) Find(page, pageSize int, filter Filterer) (Collection, error) {
 	skipCount := (page - 1) * pageSize
 
 	for _, meta := range t.index.Items() {
-		dObj := reflect.New(t.t)
-		dInf := dObj.Interface()
-		err := t.tape.Read(meta.Point(), dInf)
+		rec, err := t.readData(meta)
 
 		if err != nil {
 			return nil, err
 		}
 
-		dataObj := dObj.Elem().Interface().(Dataer)
-
-		if filter.Filter(dataObj) {
+		if filter.Filter(rec.Data()) {
 			if skipCount == 0 && result.Count() < pageSize {
-				record := MakeRecord(meta, dataObj)
-				result.add(record)
+				result.add(rec)
 			} else {
 				skipCount--
 			}
@@ -185,13 +188,13 @@ func (t Table) Update(record Recorder) error {
 		return err
 	}
 
-	meta := record.Meta()
 	point, err := t.tape.Write(data)
 
 	if err != nil {
 		return err
 	}
 
+	meta := record.Meta()
 	meta.Updated(point)
 
 	return nil
@@ -211,18 +214,14 @@ func (t Table) Delete(key Key) error {
 //Calculate does fancy stuff
 func (t Table) Calculate(result interface{}, calculator Calculator) error {
 	for _, meta := range t.index.Items() {
-		dObj := reflect.New(t.t)
-		dInf := dObj.Interface()
-		err := t.tape.Read(meta.Point(), dInf)
-
+		rec, err := t.readData(meta)
+		
 		if err != nil {
 			return err
 		}
 
-		dataObj := dObj.Elem().Interface().(Dataer)
-
-		if dataObj != nil {
-			err = calculator.Calc(result, dataObj)
+		if rec.Data() != nil {
+			err = calculator.Calc(result, rec.Data())
 
 			if err != nil {
 				return err
@@ -236,14 +235,16 @@ func (t Table) Calculate(result interface{}, calculator Calculator) error {
 //Save writes the contents of the index
 func (t Table) Save() error {
 	indexName := getIndexName(t.name)
-
-	err := write(indexName, t.index)
+	f, err := openFile(indexName)
 
 	if err != nil {
 		return err
 	}
 
-	return nil
+	defer f.Close()
+
+	ser := gob.NewEncoder(f)
+	return ser.Encode(t.index)
 }
 
 //Seed will load the seedfile into the husk database ONLY if it's empty.
@@ -257,7 +258,7 @@ func (t Table) Seed(seedfile string) error {
 			return err
 		}
 
-		err = json.Unmarshal(byts, &result)
+		err = json.Unmarshal(byts, result)
 
 		if err != nil {
 			return err
