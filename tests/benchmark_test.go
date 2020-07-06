@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"github.com/louisevanderlith/husk"
 	"testing"
 
 	"github.com/louisevanderlith/husk/tests/sample"
@@ -12,23 +13,28 @@ var (
 
 func init() {
 	benchCtx = sample.NewContext()
-
+	benchCtx.Seed()
 }
 
-func BenchmarkSeed_PeoplePopulate(b *testing.B) {
-	DestroyData()
-	err := benchCtx.People.Seed("people.seed.json")
+func BenchmarkExist_Everything(b *testing.B) {
+	benchCtx.Journals.Exists(husk.Everything())
+}
+
+func BenchmarkCount_JournalCount(b *testing.B) {
+	count := int64(0)
+	err := benchCtx.Journals.Calculate(&count, husk.RowCount())
 
 	if err != nil {
 		b.Fatal(err)
 		return
 	}
 
-	benchCtx.People.Save()
+	b.Log(count)
 }
 
-func BenchmarkFilter_PerfectBalance(b *testing.B) {
-	set, err := benchCtx.People.Find(1, 10, sample.SameBalance(30321.12))
+func BenchmarkFilter_FindByAuthor(b *testing.B) {
+	//defer DestroyData()
+	set, err := benchCtx.Journals.Find(1, 10, sample.ByPublisher("Universidade Federal do Rio Grande"))
 
 	if err != nil {
 		b.Error(err)
@@ -43,17 +49,7 @@ func BenchmarkFilter_PerfectBalance(b *testing.B) {
 		b.Log(curr.Data())
 	}
 
-	if set.Count() != 10 {
+	if set.Count() != 6 {
 		b.Errorf("%+v\n", set.Count())
-	}
-}
-
-func BenchmarkCalc_CalculateLowestBalance(b *testing.B) {
-	name := ""
-
-	ctx.People.Calculate(&name, sample.LowestBalance())
-
-	if name != "Kelley" {
-		b.Errorf("name Kelley not found, got %s", name)
 	}
 }

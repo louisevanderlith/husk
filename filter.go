@@ -30,7 +30,6 @@ func ByFields(param Dataer) filter {
 	return func(obj Dataer) bool {
 		objFields := GetFields(obj)
 		for k, v := range parmFields {
-
 			if !reflect.ValueOf(v).IsZero() && !reflect.DeepEqual(objFields[k], v) {
 				return false
 			}
