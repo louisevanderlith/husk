@@ -6,10 +6,9 @@ import (
 )
 
 const (
-	dbPath       string = "db"
-	dataPath     string = "db/%s.Data.husk"
-	indexPath    string = "db/%s.index.husk"
-	indexPattern string = "db/*.index.husk"
+	dbPath    string = "db"
+	dataPath  string = "db/%s.Data.husk"
+	indexPath string = "db/%s.index.husk"
 )
 
 func getRecordName(tableName string) string {
