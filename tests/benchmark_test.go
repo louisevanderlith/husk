@@ -13,20 +13,11 @@ var (
 
 func init() {
 	benchCtx = sample.NewContext()
+	benchCtx.Seed()
+}
 
-	err := benchCtx.Journals.Seed("journals.seed.json")
-
-	if err != nil {
-		panic(err)
-		return
-	}
-
-	err = benchCtx.Journals.Save()
-
-	if err != nil {
-		panic(err)
-		return
-	}
+func BenchmarkExist_Everything(b *testing.B) {
+	benchCtx.Journals.Exists(husk.Everything())
 }
 
 func BenchmarkCount_JournalCount(b *testing.B) {
@@ -39,22 +30,6 @@ func BenchmarkCount_JournalCount(b *testing.B) {
 	}
 
 	b.Log(count)
-}
-
-func BenchmarkSeed_JournalsPopulate(b *testing.B) {
-	DestroyData()
-	err := benchCtx.Journals.Seed("journals.seed.json")
-
-	if err != nil {
-		b.Fatal(err)
-		return
-	}
-
-	err = benchCtx.Journals.Save()
-
-	if err != nil {
-		b.Fatal(err)
-	}
 }
 
 func BenchmarkFilter_FindByAuthor(b *testing.B) {

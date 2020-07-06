@@ -8,6 +8,7 @@ type Context struct {
 	Journals husk.Tabler
 }
 
+//Returns a new Journal Database
 func NewContext() Context {
 	result := Context{}
 

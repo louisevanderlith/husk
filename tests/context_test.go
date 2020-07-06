@@ -52,6 +52,20 @@ func TestDiscover_ListLayouts(t *testing.T) {
 	}
 }
 
+func TestCount_JournalCount(t *testing.T) {
+	count := int64(0)
+	err := benchCtx.Journals.Calculate(&count, husk.RowCount())
+
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
+	if count == 0 {
+		t.Fatal("invalid count")
+	}
+}
+
 func TestFind_SearchItems(t *testing.T) {
 	set, err := benchCtx.Journals.Find(1, 10, sample.ByPublisher("Universidade Federal do Rio Grande"))
 

@@ -11,7 +11,6 @@ import (
 type index struct {
 	Values map[Key]*meta
 	Keys   []Key
-	Indx   int
 }
 
 func loadIndex(indexFile *os.File) (Indexer, error) {
@@ -38,6 +37,10 @@ func loadIndex(indexFile *os.File) (Indexer, error) {
 	return result, nil
 }
 
+func (m *index) Entries() []Key {
+	return m.Keys
+}
+
 // CreateSpaces generates a new Key and returns Meta
 func (m *index) CreateSpace(point *Point) *meta {
 	key := m.getNextKey()
@@ -59,12 +62,15 @@ func (m *index) getNextKey() Key {
 }
 
 /// Create new entry in this index that maps key K to value V
-func (m *index) Insert(v *meta) {
-	m.Values[v.GetKey()] = v
+func (m *index) Insert(v *meta) Key {
+	k := v.GetKey()
+	m.Values[k] = v
 
 	//key in-front
-	tmp := []Key{v.GetKey()}
+	tmp := []Key{k}
 	m.Keys = append(tmp, m.Keys...)
+
+	return k
 }
 
 /// Find an entry by key, returns nil of not found or not active
@@ -102,19 +108,6 @@ func (m *index) Delete(k Key) bool {
 	m.Keys = m.Keys[:len(m.Keys)-1]
 
 	return true
-}
-
-// Items returns Active records
-func (m *index) Items() map[Key]*meta {
-	result := make(map[Key]*meta)
-
-	for k, meta := range m.Values {
-		if meta.Active {
-			result[k] = meta
-		}
-	}
-
-	return result
 }
 
 func (m *index) getIndexOfKey(key Key) int {

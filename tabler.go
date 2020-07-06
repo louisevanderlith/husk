@@ -1,6 +1,8 @@
 package husk
 
-import "reflect"
+import (
+	"reflect"
+)
 
 //Tabler provides everything a Table should be able to do.
 type Tabler interface {
@@ -15,9 +17,9 @@ type Tabler interface {
 	//Exists confirms the existence of a record
 	Exists(filter Filterer) bool
 	//Create saves a new object to the database
-	Create(obj Dataer) CreateSet
-	//CreateMulti saves multiple records, then commits to the database.
-	CreateMulti(objs ...Dataer) []CreateSet
+	Create(obj Dataer) (Recorder, error)
+	//CreateMulti saves multiple records
+	CreateMulti(objs ...Dataer) (int, error)
 	//Update records changes made to a record.
 	Update(record Recorder) error
 	//Delete removes a record with the matching key.
@@ -28,6 +30,9 @@ type Tabler interface {
 
 	//Seeds data from a json file
 	Seed(seedfile string) error
+	//Seeds data from a io.reader
+	//SeedReader(r io.Reader) error --soon
+
 	Type() reflect.Type
 }
 

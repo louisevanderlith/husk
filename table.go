@@ -92,7 +92,13 @@ func (t Table) Find(page, pageSize int, filter Filterer) (Collection, error) {
 	result := NewRecordSet(page)
 	skipCount := (page - 1) * pageSize
 
-	for _, meta := range t.index.Items() {
+	for _, k := range t.index.Entries() {
+		meta := t.index.Get(k)
+
+		if meta == nil {
+			continue
+		}
+
 		rec, err := t.readData(meta)
 
 		if err != nil {
@@ -137,17 +143,17 @@ func (t Table) Exists(filter Filterer) bool {
 }
 
 //Create adds a new data object to the collection.
-func (t Table) Create(obj Dataer) CreateSet {
+func (t Table) Create(obj Dataer) (Recorder, error) {
 	err := obj.Valid()
 
 	if err != nil {
-		return CreateSet{nil, err}
+		return nil, err
 	}
 
 	point, err := t.tape.Write(obj)
 
 	if err != nil {
-		return CreateSet{nil, err}
+		return nil, err
 	}
 
 	meta := t.index.CreateSpace(point)
@@ -155,19 +161,23 @@ func (t Table) Create(obj Dataer) CreateSet {
 
 	record := MakeRecord(meta, obj)
 
-	return CreateSet{record, nil}
+	return record, nil
 }
 
 //CreateMulti calls Create on a collection of data objects.
-func (t Table) CreateMulti(objs ...Dataer) []CreateSet {
-	var result []CreateSet
-
+func (t Table) CreateMulti(objs ...Dataer) (int, error) {
+	count := 0
 	for _, obj := range objs {
-		set := t.Create(obj)
-		result = append(result, set)
+		_, err := t.Create(obj)
+
+		if err != nil {
+			return 0, err
+		}
+
+		count++
 	}
 
-	return result
+	return count, nil
 }
 
 //Update writes new data a record
@@ -213,19 +223,28 @@ func (t Table) Delete(key Key) error {
 
 //Calculate does fancy stuff
 func (t Table) Calculate(result interface{}, calculator Calculator) error {
-	for _, meta := range t.index.Items() {
+	for _, k := range t.index.Entries() {
+		meta := t.index.Get(k)
+
+		if meta == nil {
+			continue
+		}
+
 		rec, err := t.readData(meta)
-		
+
 		if err != nil {
 			return err
 		}
 
-		if rec.Data() != nil {
-			err = calculator.Calc(result, rec.Data())
+		if rec.Data() == nil {
+			log.Fatal("data nil for some reason")
+			continue
+		}
 
-			if err != nil {
-				return err
-			}
+		err = calculator.Calc(result, rec.Data())
+
+		if err != nil {
+			return err
 		}
 	}
 
@@ -249,30 +268,32 @@ func (t Table) Save() error {
 
 //Seed will load the seedfile into the husk database ONLY if it's empty.
 func (t Table) Seed(seedfile string) error {
-	if !t.Exists(Everything()) {
-		result := reflect.New(reflect.SliceOf(t.t)).Interface()
+	if t.Exists(Everything()) {
+		return nil
+	}
 
-		byts, err := ioutil.ReadFile(seedfile)
+	result := reflect.New(reflect.SliceOf(t.t)).Interface()
+
+	byts, err := ioutil.ReadFile(seedfile)
+
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(byts, result)
+
+	if err != nil {
+		return err
+	}
+
+	val := reflect.ValueOf(result).Elem()
+
+	for i := 0; i < val.Len(); i++ {
+		item := val.Index(i).Interface()
+		_, err := t.Create(item.(Dataer))
 
 		if err != nil {
 			return err
-		}
-
-		err = json.Unmarshal(byts, result)
-
-		if err != nil {
-			return err
-		}
-
-		val := reflect.ValueOf(result).Elem()
-
-		for i := 0; i < val.Len(); i++ {
-			item := val.Index(i).Interface()
-			cset := t.Create(item.(Dataer))
-
-			if cset.Error != nil {
-				return cset.Error
-			}
 		}
 	}
 
