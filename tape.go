@@ -14,8 +14,7 @@ type Taper interface {
 }
 
 type tape struct {
-	track  *os.File
-	offset int64
+	track *os.File
 }
 
 func newTape(trackname string) Taper {
@@ -25,7 +24,7 @@ func newTape(trackname string) Taper {
 		panic(err)
 	}
 
-	return &tape{track, int64(0)}
+	return &tape{track}
 }
 
 //Reads the data @point into obj
@@ -35,8 +34,6 @@ func (t *tape) Read(point *Point, obj interface{}) error {
 	if err != nil {
 		return err
 	}
-
-	defer t.track.Seek(0, io.SeekStart)
 
 	serial := gob.NewDecoder(t.track)
 	return serial.Decode(obj)
@@ -52,16 +49,9 @@ func (t *tape) GetSize() (int64, error) {
 	return inf.Size(), nil
 }
 
+//Write will append obj to the end of the file
 func (t *tape) Write(obj Dataer) (*Point, error) {
-	startOff, err := t.GetSize()
-
-	if err != nil {
-		return nil, err
-	}
-
-	result := newPoint(startOff, 0)
-
-	nf, err := t.track.Seek(result.Offset, 1)
+	nf, err := t.track.Seek(0, io.SeekEnd)
 
 	if err != nil {
 		return nil, err
@@ -80,12 +70,7 @@ func (t *tape) Write(obj Dataer) (*Point, error) {
 		return nil, err
 	}
 
-	t.offset += nf
-	result.Len = endWith - startOff
-
-	t.track.Seek(0, io.SeekStart)
-
-	return result, nil
+	return newPoint(nf, endWith-nf), nil
 }
 
 //Close closes the Data Track
