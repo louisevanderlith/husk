@@ -1,14 +1,14 @@
 package tests
 
 import (
+	"github.com/louisevanderlith/husk/db"
+	"github.com/louisevanderlith/husk/hsk"
 	"testing"
-
-	"github.com/louisevanderlith/husk"
 )
 
 func TestNext_ShouldReturnNext(t *testing.T) {
-	defer DestroyData()
-	results, err := ctx.Journals.Find(1, 3, husk.Everything())
+	ctx := db.NewContext()
+	results, err := ctx.ListEvents()
 
 	if err != nil {
 		t.Fatal(err)
@@ -22,7 +22,7 @@ func TestNext_ShouldReturnNext(t *testing.T) {
 
 	rator := results.GetEnumerator()
 	for rator.MoveNext() {
-		curr := rator.Current()
+		curr := rator.Current().(hsk.Recorder)
 		t.Logf("%+v", curr.Data())
 	}
 }

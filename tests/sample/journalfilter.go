@@ -1,12 +1,12 @@
 package sample
 
 import (
-	"github.com/louisevanderlith/husk"
+	"github.com/louisevanderlith/husk/hsk"
 )
 
 type journalFilter func(obj Journal) bool
 
-func (f journalFilter) Filter(obj husk.Dataer) bool {
+func (f journalFilter) Filter(obj hsk.Dataer) bool {
 	return f(obj.(Journal))
 }
 

@@ -1,7 +1,7 @@
 package sample
 
 import (
-	"github.com/louisevanderlith/husk"
+	"github.com/louisevanderlith/husk/hsk"
 	"time"
 )
 
@@ -14,7 +14,7 @@ type Journal struct {
 }
 
 func (j Journal) Valid() error {
-	return husk.ValidateStruct(&j)
+	return hsk.ValidateStruct(j)
 }
 
 type Entry struct {
