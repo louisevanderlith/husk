@@ -1,29 +1,37 @@
 package storers
 
 import (
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/louisevanderlith/husk/collections"
 	"github.com/louisevanderlith/husk/hsk"
+	"github.com/louisevanderlith/husk/keys"
 	"github.com/louisevanderlith/husk/op"
 	"io/ioutil"
-	"log"
+	"os"
+	"path/filepath"
 	"reflect"
 )
+
+func init() {
+	gob.Register(&keys.TimeKey{})
+	gob.Register(hsk.NewMeta(nil))
+	gob.Register(hsk.NewPoint(0, 0))
+}
 
 //Table is used to interact with records
 type Table interface {
 	Name() string
 	//Exists confirms the existence of a record
-	Exists(filter op.Filterer) bool
+	Exists(filter op.Filter) bool
 
 	//FindByKey finds a record with a matching key.
-	FindByKey(key hsk.Key) (hsk.Recorder, error)
+	FindByKey(key hsk.Key) (hsk.Record, error)
 	//Find looks for records that match the filter.
-	Find(page, pageSize int, filter op.Filterer) (collections.Page, error)
+	Find(page, pageSize int, filter op.Filter) (hsk.Page, error)
 	//FindFirst does what Find does, but will only return one record.
-	FindFirst(filter op.Filterer) (hsk.Recorder, error)
+	FindFirst(filter op.Filter) (hsk.Record, error)
 
 	//Map can modify a result set with data values
 	Map(result interface{}, calculator op.Mapper) error
@@ -45,13 +53,21 @@ type Table interface {
 
 type table struct {
 	objT  reflect.Type
-	index Indexer
-	store Storer
+	index Index
+	store Storage
 }
 
-func NewTable(objT reflect.Type, index Indexer, store Storer) Table {
+func NewTable(obj hsk.Dataer, store Storage) Table {
+
+	t := reflect.TypeOf(obj)
+	index, err := fetchIndex(t.Name())
+
+	if err != nil {
+		panic(err)
+	}
+
 	return table{
-		objT:  objT,
+		objT:  t,
 		index: index,
 		store: store,
 	}
@@ -65,8 +81,8 @@ func (t table) Name() string {
 	return t.objT.Name()
 }
 
-func (t table) filter(skipCount, limit int, f op.Filterer) (<-chan hsk.Recorder, error) {
-	chnl := make(chan hsk.Recorder)
+func (t table) filter(skipCount, limit int, f op.Filter) (<-chan hsk.Record, error) {
+	chnl := make(chan hsk.Record)
 	go func() {
 		for i, k := range t.index.GetKeys() {
 			meta := t.index.Get(k)
@@ -82,7 +98,8 @@ func (t table) filter(skipCount, limit int, f op.Filterer) (<-chan hsk.Recorder,
 				panic(err)
 			}
 
-			if f.Filter(<-data) {
+			record := hsk.MakeRecord(k, <-data)
+			if f.Filter(record) {
 				if skipCount != 0 {
 					skipCount--
 					continue
@@ -101,11 +118,11 @@ func (t table) filter(skipCount, limit int, f op.Filterer) (<-chan hsk.Recorder,
 }
 
 //FindByKey returns a Record which has the same Key
-func (t table) FindByKey(key hsk.Key) (hsk.Recorder, error) {
-	meta := t.index.Get(key)
+func (t table) FindByKey(k hsk.Key) (hsk.Record, error) {
+	meta := t.index.Get(k)
 
 	if meta == nil {
-		return nil, fmt.Errorf("key %v not found in %s", key, t.Name())
+		return nil, fmt.Errorf("key %v not found in %s", k, t.Name())
 	}
 
 	data := make(chan hsk.Dataer)
@@ -115,12 +132,12 @@ func (t table) FindByKey(key hsk.Key) (hsk.Recorder, error) {
 		return nil, err
 	}
 
-	return hsk.MakeRecord(meta, <-data), nil
+	return hsk.MakeRecord(k, <-data), nil
 }
 
 //Find returns a Collection of records matching the applied filter function.
-func (t table) Find(pageNo, pageSize int, filter op.Filterer) (collections.Page, error) {
-	result := collections.NewRecordPage(pageNo, pageSize)
+func (t table) Find(pageNo, pageSize int, filter op.Filter) (hsk.Page, error) {
+	result := hsk.NewRecordPage(pageNo, pageSize)
 	skipCount := (pageNo - 1) * pageSize
 
 	for _, k := range t.index.GetKeys() {
@@ -137,15 +154,15 @@ func (t table) Find(pageNo, pageSize int, filter op.Filterer) (collections.Page,
 			return nil, err
 		}
 
-		dataObj := <-data
+		record := hsk.MakeRecord(k, <-data)
 
-		if filter.Filter(dataObj) {
+		if filter.Filter(record) {
 			if skipCount != 0 {
 				skipCount--
 				continue
 			}
 
-			if !result.Add(hsk.MakeRecord(meta, dataObj)) {
+			if !result.Add(record) {
 				break
 			}
 		}
@@ -155,7 +172,7 @@ func (t table) Find(pageNo, pageSize int, filter op.Filterer) (collections.Page,
 }
 
 //FindFirst will return that first record that matches the 'filter'
-func (t table) FindFirst(filter op.Filterer) (hsk.Recorder, error) {
+func (t table) FindFirst(filter op.Filter) (hsk.Record, error) {
 	for _, k := range t.index.GetKeys() {
 		meta := t.index.Get(k)
 
@@ -170,9 +187,9 @@ func (t table) FindFirst(filter op.Filterer) (hsk.Recorder, error) {
 			return nil, err
 		}
 
-		dataObj := <-data
-		if filter.Filter(dataObj) {
-			return hsk.MakeRecord(meta, dataObj), nil
+		record := hsk.MakeRecord(k, <-data)
+		if filter.Filter(record) {
+			return record, nil
 		}
 	}
 
@@ -180,7 +197,7 @@ func (t table) FindFirst(filter op.Filterer) (hsk.Recorder, error) {
 }
 
 //Exists will return true of any records match the filter.
-func (t table) Exists(filter op.Filterer) bool {
+func (t table) Exists(filter op.Filter) bool {
 	_, err := t.FindFirst(filter)
 
 	return err == nil
@@ -191,18 +208,17 @@ func (t table) Create(obj hsk.Dataer) (hsk.Key, error) {
 	err := obj.Valid()
 
 	if err != nil {
-		return hsk.CrazyKey(), err
+		return nil, err
 	}
 
 	point, err := t.store.Write(obj)
 
 	if err != nil {
-		return hsk.CrazyKey(), err
+		return nil, err
 	}
 
-	meta := t.index.Add(point)
-
-	return meta.GetKey(), nil
+	meta := hsk.NewMeta(point)
+	return t.index.Add(meta)
 }
 
 //CreateMulti calls Create on a collection of data objects.
@@ -244,14 +260,14 @@ func (t table) Update(k hsk.Key, obj hsk.Dataer) error {
 
 	meta.Update(point)
 
-	t.index.Set(k, meta)
-
 	return nil
+	//May not need to set via index
+	//return t.index.Set(k, meta)
 }
 
 //Delete marks the Record as Disabled and removes it from the index.
-func (t table) Delete(key hsk.Key) error {
-	deleted := t.index.Delete(key)
+func (t table) Delete(k hsk.Key) error {
+	deleted := t.index.Delete(k)
 
 	if !deleted {
 		return errors.New("nothing deleted")
@@ -276,17 +292,9 @@ func (t table) Map(result interface{}, calculator op.Mapper) error {
 			return err
 		}
 
-		dataObj := <-data
-		if dataObj == nil {
-			log.Fatal("data nil for some reason")
-			continue
-		}
+		record := hsk.MakeRecord(k, <-data)
 
-		err = calculator.Map(result, dataObj)
-
-		if err != nil {
-			return err
-		}
+		return calculator.Map(result, record)
 	}
 
 	return nil
@@ -317,6 +325,33 @@ func (t table) Seed(seedfile string) error {
 	for i := 0; i < val.Len(); i++ {
 		item := val.Index(i).Interface().(hsk.Dataer)
 		_, err := t.Create(item)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+//DestroyContents will remove the file at the given path
+func DestroyContents(path string) error {
+	d, err := os.Open(path)
+
+	if err != nil {
+		return err
+	}
+
+	defer d.Close()
+
+	names, err := d.Readdirnames(-1)
+
+	if err != nil {
+		return err
+	}
+
+	for _, name := range names {
+		err = os.RemoveAll(filepath.Join(path, name))
 
 		if err != nil {
 			return err

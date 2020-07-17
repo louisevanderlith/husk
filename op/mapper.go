@@ -6,17 +6,17 @@ import (
 
 //Calculator updates the result set with values from data
 type Mapper interface {
-	Map(result interface{}, obj hsk.Dataer) error
+	Map(result interface{}, obj hsk.Record) error
 }
 
-type mapperFunc func(result interface{}, obj hsk.Dataer) error
+type mapperFunc func(result interface{}, obj hsk.Record) error
 
-func (f mapperFunc) Map(result interface{}, obj hsk.Dataer) error {
+func (f mapperFunc) Map(result interface{}, obj hsk.Record) error {
 	return f(result, obj)
 }
 
 func RowCount() mapperFunc {
-	return func(result interface{}, obj hsk.Dataer) error {
+	return func(result interface{}, obj hsk.Record) error {
 		count := result.(*int64)
 
 		*count++

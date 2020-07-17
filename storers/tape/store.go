@@ -9,13 +9,7 @@ import (
 	"reflect"
 )
 
-//tapeStore 101[0]00100011
-type tapeStore struct {
-	t     reflect.Type
-	track *os.File
-}
-
-func newStore(t reflect.Type) storers.Storer {
+func newStore(t reflect.Type) storers.Storage {
 	trackName := getDataPath(t.Name())
 	track, err := os.OpenFile(trackName, os.O_RDWR|os.O_CREATE, 0644)
 
@@ -29,13 +23,18 @@ func newStore(t reflect.Type) storers.Storer {
 	}
 }
 
-func (ts *tapeStore) Read(p *hsk.Point, res chan<- hsk.Dataer) error {
+//tapeStore 101[0]00100011
+type tapeStore struct {
+	t     reflect.Type
+	track *os.File
+}
 
+func (ts *tapeStore) Read(p hsk.Point, res chan<- hsk.Dataer) error {
 	go func() {
 		dObj := reflect.New(ts.t)
 		dInf := dObj.Interface()
 
-		r := io.NewSectionReader(ts.track, p.Offset, p.Len)
+		r := io.NewSectionReader(ts.track, p.GetOffset(), p.GetLength())
 
 		serial := gob.NewDecoder(r)
 		err := serial.Decode(dInf)
@@ -51,7 +50,7 @@ func (ts *tapeStore) Read(p *hsk.Point, res chan<- hsk.Dataer) error {
 }
 
 //Write will append obj to the end of the file
-func (ts *tapeStore) Write(obj hsk.Dataer) (*hsk.Point, error) {
+func (ts *tapeStore) Write(obj hsk.Dataer) (hsk.Point, error) {
 	nf, err := ts.track.Seek(0, io.SeekEnd)
 
 	if err != nil {

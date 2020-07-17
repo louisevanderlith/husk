@@ -2,7 +2,7 @@ package tests
 
 import (
 	"github.com/louisevanderlith/husk/db"
-	"github.com/louisevanderlith/husk/hsk"
+	"github.com/louisevanderlith/husk/keys"
 	"testing"
 )
 
@@ -11,13 +11,14 @@ func TestCreate_MustPersist(t *testing.T) {
 
 	p := db.Event{
 		Type:      "INSERT",
-		RecordKey: hsk.CrazyKey(),
+		RecordKey: keys.CrazyKey(),
 	}
 
 	k, err := ctx.CreateEvent(p)
 
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	againP, err := ctx.GetEvent(k)
@@ -38,24 +39,24 @@ func TestCreate_MustPersist(t *testing.T) {
 }
 
 func TestCreate_MultipleEntries_MustPersist(t *testing.T) {
-	p := db.Event{Type: "INSERT", RecordKey: hsk.CrazyKey()}
-	p1 := db.Event{Type: "READ", RecordKey: hsk.CrazyKey()}
-	p2 := db.Event{Type: "DELETE", RecordKey: hsk.CrazyKey()}
+	p := db.Event{Type: "INSERT", RecordKey: keys.CrazyKey()}
+	p1 := db.Event{Type: "READ", RecordKey: keys.CrazyKey()}
+	p2 := db.Event{Type: "DELETE", RecordKey: keys.CrazyKey()}
 
 	ctx := db.NewContext()
-	keys, err := ctx.CreateEvents(p, p1, p2)
+	ks, err := ctx.CreateEvents(p, p1, p2)
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	if len(keys) != 3 {
-		t.Error("expected", 3, "got", len(keys))
+	if len(ks) != 3 {
+		t.Error("expected", 3, "got", len(ks))
 		return
 	}
 
-	for _, k := range keys {
+	for _, k := range ks {
 		_, err := ctx.GetEvent(k)
 
 		if err != nil {
@@ -64,5 +65,3 @@ func TestCreate_MultipleEntries_MustPersist(t *testing.T) {
 		}
 	}
 }
-
-

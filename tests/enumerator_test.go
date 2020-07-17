@@ -22,7 +22,7 @@ func TestNext_ShouldReturnNext(t *testing.T) {
 
 	rator := results.GetEnumerator()
 	for rator.MoveNext() {
-		curr := rator.Current().(hsk.Recorder)
+		curr := rator.Current().(hsk.Record)
 		t.Logf("%+v", curr.Data())
 	}
 }

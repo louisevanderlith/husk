@@ -5,7 +5,7 @@ import (
 	"github.com/louisevanderlith/husk/storers"
 )
 
-func newStore() storers.Storer {
+func newStore() storers.Storage {
 	return &chipStore{}
 }
 
@@ -13,15 +13,15 @@ type chipStore struct {
 	records []hsk.Dataer
 }
 
-func (c *chipStore) Read(p *hsk.Point, res chan<- hsk.Dataer) error {
+func (c *chipStore) Read(p hsk.Point, res chan<- hsk.Dataer) error {
 	go func() {
-		res <- c.records[p.Offset]
+		res <- c.records[p.GetOffset()]
 	}()
 
 	return nil
 }
 
-func (c *chipStore) Write(obj hsk.Dataer) (*hsk.Point, error) {
+func (c *chipStore) Write(obj hsk.Dataer) (hsk.Point, error) {
 	c.records = append(c.records, obj)
 
 	ln := int64(len(c.records))
@@ -29,5 +29,7 @@ func (c *chipStore) Write(obj hsk.Dataer) (*hsk.Point, error) {
 }
 
 func (c chipStore) Close() error {
-	panic("implement me")
+	c.records = nil
+
+	return nil
 }

@@ -1,8 +1,8 @@
 package sample
 
 import (
-	"github.com/louisevanderlith/husk/collections"
 	"github.com/louisevanderlith/husk/db"
+	"github.com/louisevanderlith/husk/hsk"
 	"github.com/louisevanderlith/husk/op"
 	"github.com/louisevanderlith/husk/storers"
 	"github.com/louisevanderlith/husk/storers/chip"
@@ -10,8 +10,8 @@ import (
 
 type SampleContext interface {
 	db.Ctxer
-	FindJournals(page, size int) (collections.Page, error)
-	FindJournalsByPublisher(page, size int, name string) (collections.Page, error)
+	FindJournals(page, size int) (hsk.Page, error)
+	FindJournalsByPublisher(page, size int, name string) (hsk.Page, error)
 	HasJournals() bool
 	CountJournals() (int64, error)
 }
@@ -57,10 +57,10 @@ func (ctx context) CountJournals() (int64, error) {
 	return count, nil
 }
 
-func (ctx context) FindJournals(page, size int) (collections.Page, error) {
+func (ctx context) FindJournals(page, size int) (hsk.Page, error) {
 	return ctx.Journals.Find(page, size, op.Everything())
 }
 
-func (ctx context) FindJournalsByPublisher(page, size int, name string) (collections.Page, error) {
+func (ctx context) FindJournalsByPublisher(page, size int, name string) (hsk.Page, error) {
 	return ctx.Journals.Find(page, size, ByPublisher(name))
 }

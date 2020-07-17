@@ -41,7 +41,7 @@ func BenchmarkFilter_FindByAuthor(b *testing.B) {
 	itor := page.GetEnumerator()
 
 	for itor.MoveNext() {
-		curr := itor.Current().(hsk.Recorder)
+		curr := itor.Current().(hsk.Record)
 
 		b.Log(curr.Data())
 	}

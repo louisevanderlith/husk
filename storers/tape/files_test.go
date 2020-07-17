@@ -5,26 +5,8 @@ import (
 )
 
 func TestGetRecordName_Correct(t *testing.T) {
-	actual := getRecordName("Person")
+	actual := getDataPath("Person")
 	expected := "db/Person.Data.husk"
-
-	if actual != expected {
-		t.Errorf("Expected %s, got %s", expected, actual)
-	}
-}
-
-func TestGetIndexName_Correct(t *testing.T) {
-	expected := "db/Person.index.husk"
-	actual := getIndexName("Person")
-
-	if actual != expected {
-		t.Errorf("Expected %s, got %s", expected, actual)
-	}
-}
-
-func TestCleanTableName_Correct(t *testing.T) {
-	expected := "Person"
-	actual := cleanTableName("Person.index.husk")
 
 	if actual != expected {
 		t.Errorf("Expected %s, got %s", expected, actual)

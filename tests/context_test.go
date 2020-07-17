@@ -4,9 +4,18 @@ import (
 	"encoding/json"
 	"github.com/louisevanderlith/husk/db"
 	"github.com/louisevanderlith/husk/hsk"
+	"github.com/louisevanderlith/husk/keys"
 	"strings"
 	"testing"
 )
+
+/*
+	Context tests should tests;
+	1. Data is Saved to Disk
+	2. Index is Saved to Disk
+	3. Index & Data can be reloaded from Disk
+	4. Seeding works, and saves to Disk.
+*/
 
 func TestDiscover_ListNames(t *testing.T) {
 	ctx := db.NewContext()
@@ -61,24 +70,24 @@ func TestFind_SearchItems(t *testing.T) {
 	itor := set.GetEnumerator()
 
 	for itor.MoveNext() {
-		curr := itor.Current().(hsk.Recorder)
+		curr := itor.Current().(hsk.Record)
 
 		t.Log(curr.Data())
 	}
 
-	if set.Count() != 6 {
+	if set.Count() != 5 {
 		t.Errorf("%+v\n", set.Count())
 	}
 }
 
 func TestUpdate_MustPersist(t *testing.T) {
-	p := db.Event{Type: "INSERT", RecordKey: hsk.CrazyKey()}
+	p := db.Event{Type: "INSERT", RecordKey: keys.CrazyKey()}
 
 	ctx := db.NewContext()
 	k, err := ctx.CreateEvent(p)
 
 	if err != nil {
-		t.Error(err)
+		t.Error("Create Error", err)
 		return
 	}
 
@@ -87,14 +96,14 @@ func TestUpdate_MustPersist(t *testing.T) {
 	err = ctx.UpdateEvent(k, p)
 
 	if err != nil {
-		t.Error(err)
+		t.Error("Update Error", err)
 		return
 	}
 
 	againP, err := ctx.GetEvent(k)
 
 	if err != nil {
-		t.Error(err)
+		t.Error("Get Error", err)
 	}
 
 	againData := againP.Data().(db.Event)
@@ -105,7 +114,7 @@ func TestUpdate_MustPersist(t *testing.T) {
 }
 
 func TestDelete_MustPersist(t *testing.T) {
-	p := db.Event{Type: "DELETE", RecordKey: hsk.CrazyKey()}
+	p := db.Event{Type: "DELETE", RecordKey: keys.CrazyKey()}
 
 	ctx := db.NewContext()
 	k, err := ctx.CreateEvent(p)
@@ -132,12 +141,12 @@ func TestDelete_MustPersist(t *testing.T) {
 }
 
 func TestFind_FindFilteredItems(t *testing.T) {
-	p := db.Event{Type: "INSERT", RecordKey: hsk.CrazyKey()}
-	p1 := db.Event{Type: "READ", RecordKey: hsk.CrazyKey()}
-	p2 := db.Event{Type: "DELETE", RecordKey: hsk.CrazyKey()}
+	p := db.Event{Type: "INSERT", RecordKey: keys.CrazyKey()}
+	p1 := db.Event{Type: "READ", RecordKey: keys.CrazyKey()}
+	p2 := db.Event{Type: "DELETE", RecordKey: keys.CrazyKey()}
 
 	ctx := db.NewContext()
-	keys, err := ctx.CreateEvents(p, p1, p2)
+	ks, err := ctx.CreateEvents(p, p1, p2)
 
 	if err != nil {
 		t.Fatal(err)
@@ -153,10 +162,10 @@ func TestFind_FindFilteredItems(t *testing.T) {
 	itor := result.GetEnumerator()
 	matchFound := false
 	for itor.MoveNext() {
-		curr := itor.Current().(hsk.Recorder)
+		curr := itor.Current().(hsk.Record)
 		recKey := curr.GetKey()
 
-		for _, k := range keys {
+		for _, k := range ks {
 			if recKey == k {
 				matchFound = true
 				break
@@ -183,7 +192,7 @@ func TestFind_FindEverything(t *testing.T) {
 	}
 }
 
-func TestFilter_FindEverything_MustBe1000(t *testing.T) {
+func TestFilter_FindEverything_MustBe10(t *testing.T) {
 	ctx := db.NewContext()
 	records, err := ctx.ListEvents()
 

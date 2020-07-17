@@ -222,3 +222,13 @@ func structValidation(obj interface{}, meta tagMeta) (bool, []string) {
 func pointerValidation(obj interface{}, meta tagMeta) (bool, []string) {
 	return true, nil
 }
+
+func interfaceValidation(obj interface{}, meta tagMeta) (bool, []string) {
+	var issues []string
+
+	if meta.Required && obj == nil {
+		issues = append(issues, getIDMessage(meta.PropName))
+	}
+
+	return len(issues) < 1, issues
+}

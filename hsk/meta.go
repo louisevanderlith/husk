@@ -1,43 +1,44 @@
 package hsk
 
 type Meta interface {
-	Disable()
-	Update(p *Point)
-	GetKey() Key
+	//AssignKey(k Key) error
+	//GetKey() Key
+
 	IsActive() bool
-	Point() *Point
+	Disable()
+	Enable()
+
+	Update(p Point)
+	Point() Point
 }
 
 type meta struct {
-	Key     Key
 	Active  bool
-	Pointer *Point
+	Pointer Point
 }
 
-func NewMeta(key Key, point *Point) Meta {
+func NewMeta(p Point) Meta {
 	return &meta{
-		Key:     key,
 		Active:  true,
-		Pointer: point,
+		Pointer: p,
 	}
 }
 
+func (m *meta) Enable() {
+	m.Active = true
+}
 func (m *meta) Disable() {
 	m.Active = false
 }
 
-func (m *meta) Update(p *Point) {
+func (m *meta) Update(p Point) {
 	m.Pointer = p
-}
-
-func (m *meta) GetKey() Key {
-	return m.Key
 }
 
 func (m *meta) IsActive() bool {
 	return m.Active
 }
 
-func (m *meta) Point() *Point {
+func (m *meta) Point() Point {
 	return m.Pointer
 }
