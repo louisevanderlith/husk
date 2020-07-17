@@ -51,6 +51,8 @@ func GetTypeValidator(fieldType reflect.Kind) IValidation {
 		result = typeValidator(stringValidation)
 	case reflect.Struct:
 		result = typeValidator(structValidation)
+	case reflect.Interface:
+		result = typeValidator(interfaceValidation)
 	default:
 		result = typeValidator(noValidation)
 	}
