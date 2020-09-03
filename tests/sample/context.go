@@ -1,15 +1,12 @@
 package sample
 
 import (
-	"github.com/louisevanderlith/husk/db"
+	"github.com/louisevanderlith/husk"
 	"github.com/louisevanderlith/husk/hsk"
 	"github.com/louisevanderlith/husk/op"
-	"github.com/louisevanderlith/husk/storers"
-	"github.com/louisevanderlith/husk/storers/chip"
 )
 
-type SampleContext interface {
-	db.Ctxer
+type JournalContext interface {
 	FindJournals(page, size int) (hsk.Page, error)
 	FindJournalsByPublisher(page, size int, name string) (hsk.Page, error)
 	HasJournals() bool
@@ -17,20 +14,20 @@ type SampleContext interface {
 }
 
 type context struct {
-	Journals storers.Table
+	Journals hsk.Table
 }
 
 //Returns a new Journal Database
-func NewContext() SampleContext {
+func NewContext() JournalContext {
 	result := context{
-		Journals: chip.NewTable(Journal{}),
+		Journals: husk.NewTable(Journal{}),
 	}
 
-	result.seed()
+	result.Seed()
 	return result
 }
 
-func (ctx context) seed() {
+func (ctx context) Seed() {
 	err := ctx.Journals.Seed("journals.seed.json")
 
 	if err != nil {
@@ -38,7 +35,7 @@ func (ctx context) seed() {
 	}
 }
 
-func (ctx context) Shutdown() error {
+func (ctx context) Save() error {
 	return nil
 }
 

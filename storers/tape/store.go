@@ -1,23 +1,27 @@
 package tape
 
 import (
-	"encoding/gob"
+	"fmt"
 	"github.com/louisevanderlith/husk/hsk"
 	"github.com/louisevanderlith/husk/storers"
+	"github.com/louisevanderlith/husk/validation"
 	"io"
 	"os"
 	"reflect"
 )
 
-func newStore(t reflect.Type) storers.Storage {
-	trackName := getDataPath(t.Name())
-	track, err := os.OpenFile(trackName, os.O_RDWR|os.O_CREATE, 0644)
+func NewStore(t reflect.Type, encfunc storers.NewEncoder, decfunc storers.NewDecoder) storers.Storage {
+	trackName := fmt.Sprintf("db/%s.Data.husk", t.Name())
+
+	track, err := os.OpenFile(trackName, os.O_CREATE|os.O_RDWR, 0644)
 
 	if err != nil {
 		panic(err)
 	}
 
 	return &tapeStore{
+		enc:   encfunc,
+		dec:   decfunc,
 		t:     t,
 		track: track,
 	}
@@ -25,52 +29,50 @@ func newStore(t reflect.Type) storers.Storage {
 
 //tapeStore 101[0]00100011
 type tapeStore struct {
+	enc   storers.NewEncoder
+	dec   storers.NewDecoder
 	t     reflect.Type
 	track *os.File
 }
 
-func (ts *tapeStore) Read(p hsk.Point, res chan<- hsk.Dataer) error {
-	go func() {
-		dObj := reflect.New(ts.t)
-		dInf := dObj.Interface()
+func (ts *tapeStore) Read(p hsk.Point, res chan<- validation.Dataer) {
+	dObj := reflect.New(ts.t)
+	dInf := dObj.Interface()
 
-		r := io.NewSectionReader(ts.track, p.GetOffset(), p.GetLength())
+	r := io.NewSectionReader(ts.track, p.GetOffset(), p.GetLength())
 
-		serial := gob.NewDecoder(r)
-		err := serial.Decode(dInf)
+	serial := ts.dec(r)
+	err := serial.Decode(dInf)
 
-		if err != nil {
-			panic(err)
-		}
+	if err != nil {
+		panic(err)
+	}
 
-		res <- dObj.Elem().Interface().(hsk.Dataer)
-	}()
-
-	return nil
+	res <- dObj.Elem().Interface().(validation.Dataer)
 }
 
 //Write will append obj to the end of the file
-func (ts *tapeStore) Write(obj hsk.Dataer) (hsk.Point, error) {
+func (ts *tapeStore) Write(obj validation.Dataer, p chan<- hsk.Point) {
 	nf, err := ts.track.Seek(0, io.SeekEnd)
 
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	serial := gob.NewEncoder(ts.track)
+	serial := ts.enc(ts.track)
 	err = serial.Encode(obj)
 
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	endWith, err := ts.GetSize()
 
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	return hsk.NewPoint(nf, endWith-nf), nil
+	p <- hsk.NewPoint(nf, endWith-nf)
 }
 
 func (ts *tapeStore) GetSize() (int64, error) {

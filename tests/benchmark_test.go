@@ -8,14 +8,11 @@ import (
 )
 
 var (
-	benchCtx sample.SampleContext
+	benchCtx sample.JournalContext
 )
 
-func init() {
-	benchCtx = sample.NewContext()
-}
-
 func BenchmarkExist_Everything(b *testing.B) {
+	benchCtx = sample.NewContext()
 	benchCtx.HasJournals()
 }
 
@@ -48,5 +45,39 @@ func BenchmarkFilter_FindByAuthor(b *testing.B) {
 
 	if page.Count() != 6 {
 		b.Errorf("%+v\n", page.Count())
+	}
+}
+
+func TestCount_JournalCount(t *testing.T) {
+	count, err := benchCtx.CountJournals()
+
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
+	if count == 0 {
+		t.Fatal("invalid count")
+	}
+}
+
+func TestFind_SearchItems(t *testing.T) {
+	set, err := benchCtx.FindJournalsByPublisher(1, 10, "University of Malaya")
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	itor := set.GetEnumerator()
+
+	for itor.MoveNext() {
+		curr := itor.Current().(hsk.Record)
+
+		t.Log(curr.Data())
+	}
+
+	if set.Count() != 5 {
+		t.Errorf("%+v\n", set.Count())
 	}
 }

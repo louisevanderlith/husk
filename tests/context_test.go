@@ -2,9 +2,9 @@ package tests
 
 import (
 	"encoding/json"
-	"github.com/louisevanderlith/husk/db"
 	"github.com/louisevanderlith/husk/hsk"
 	"github.com/louisevanderlith/husk/keys"
+	"github.com/louisevanderlith/husk/tests/sample"
 	"strings"
 	"testing"
 )
@@ -17,80 +17,23 @@ import (
 	4. Seeding works, and saves to Disk.
 */
 
-func TestDiscover_ListNames(t *testing.T) {
-	ctx := db.NewContext()
-	exp := []string{"Events"}
-	act := db.TableNames(ctx)
-
-	if len(act) != len(exp) {
-		t.Error("invalid length discovered")
-		return
-	}
-
-	if exp[0] != act[0] {
-		t.Errorf("Expected %s, found %s", exp, act)
-	}
-}
-
-func TestDiscover_ListLayouts(t *testing.T) {
-	ctx := db.NewContext()
-	act := db.TableLayouts(ctx)
-
-	if len(act) != 1 {
-		t.Error("invalid length discovered")
-		return
-	}
-
-	if act["Events"] == nil {
-		t.Errorf("no object found %v", act)
-	}
-}
-
-func TestCount_JournalCount(t *testing.T) {
-	count, err := benchCtx.CountJournals()
-
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-
-	if count == 0 {
-		t.Fatal("invalid count")
-	}
-}
-
-func TestFind_SearchItems(t *testing.T) {
-	set, err := benchCtx.FindJournalsByPublisher(1, 10, "University of Malaya")
-
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	itor := set.GetEnumerator()
-
-	for itor.MoveNext() {
-		curr := itor.Current().(hsk.Record)
-
-		t.Log(curr.Data())
-	}
-
-	if set.Count() != 5 {
-		t.Errorf("%+v\n", set.Count())
-	}
-}
-
 func TestUpdate_MustPersist(t *testing.T) {
-	p := db.Event{Type: "INSERT", RecordKey: keys.CrazyKey()}
-
-	ctx := db.NewContext()
-	k, err := ctx.CreateEvent(p)
+	ctx := sample.NewEventContext()
+	k, err := ctx.CreateEvent("INSERT", keys.CrazyKey())
 
 	if err != nil {
 		t.Error("Create Error", err)
 		return
 	}
 
+	rec, err := ctx.GetEvent(k)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	p := rec.Data().(sample.Event)
 	p.Type = "DELETE"
 
 	err = ctx.UpdateEvent(k, p)
@@ -106,7 +49,7 @@ func TestUpdate_MustPersist(t *testing.T) {
 		t.Error("Get Error", err)
 	}
 
-	againData := againP.Data().(db.Event)
+	againData := againP.Data().(sample.Event)
 
 	if againData.Type != p.Type {
 		t.Errorf("Expected %v, got %v", p.Type, againData.Type)
@@ -114,10 +57,8 @@ func TestUpdate_MustPersist(t *testing.T) {
 }
 
 func TestDelete_MustPersist(t *testing.T) {
-	p := db.Event{Type: "DELETE", RecordKey: keys.CrazyKey()}
-
-	ctx := db.NewContext()
-	k, err := ctx.CreateEvent(p)
+	ctx := sample.NewEventContext()
+	k, err := ctx.CreateEvent("DELETE", keys.CrazyKey())
 
 	if err != nil {
 		t.Error(err)
@@ -141,18 +82,25 @@ func TestDelete_MustPersist(t *testing.T) {
 }
 
 func TestFind_FindFilteredItems(t *testing.T) {
-	p := db.Event{Type: "INSERT", RecordKey: keys.CrazyKey()}
-	p1 := db.Event{Type: "READ", RecordKey: keys.CrazyKey()}
-	p2 := db.Event{Type: "DELETE", RecordKey: keys.CrazyKey()}
+	ctx := sample.NewEventContext()
 
-	ctx := db.NewContext()
-	ks, err := ctx.CreateEvents(p, p1, p2)
+	ka, err := ctx.CreateEvent("INSERT", keys.CrazyKey())
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	kb, err := ctx.CreateEvent("READ", keys.CrazyKey())
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	kc, err := ctx.CreateEvent("DELETE", keys.CrazyKey())
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	result, err := ctx.ListEventsWithType("INSERT")
+	result, err := ctx.FindEventsByType(1, 5, "INSERT")
 
 	if err != nil {
 		t.Error(err)
@@ -165,7 +113,7 @@ func TestFind_FindFilteredItems(t *testing.T) {
 		curr := itor.Current().(hsk.Record)
 		recKey := curr.GetKey()
 
-		for _, k := range ks {
+		for _, k := range []hsk.Key{ka, kb, kc} {
 			if recKey == k {
 				matchFound = true
 				break
@@ -179,8 +127,8 @@ func TestFind_FindFilteredItems(t *testing.T) {
 }
 
 func TestFind_FindEverything(t *testing.T) {
-	ctx := db.NewContext()
-	rset, err := ctx.ListEvents()
+	ctx := sample.NewEventContext()
+	rset, err := ctx.FindEvents(1, 100)
 
 	if err != nil {
 		t.Fatal(err)
@@ -193,8 +141,8 @@ func TestFind_FindEverything(t *testing.T) {
 }
 
 func TestFilter_FindEverything_MustBe10(t *testing.T) {
-	ctx := db.NewContext()
-	records, err := ctx.ListEvents()
+	ctx := sample.NewEventContext()
+	records, err := ctx.FindEvents(1, 10)
 
 	if err != nil {
 		t.Fatal(err)
@@ -207,8 +155,8 @@ func TestFilter_FindEverything_MustBe10(t *testing.T) {
 }
 
 func TestRecordSet_ToJSON_MustBeClean(t *testing.T) {
-	ctx := db.NewContext()
-	rows, err := ctx.ListEvents()
+	ctx := sample.NewEventContext()
+	rows, err := ctx.FindEvents(1, 100)
 
 	if err != nil {
 		t.Fatal(err)

@@ -1,11 +1,9 @@
-package hsk
+package validation
 
 import (
 	"errors"
 	"reflect"
 	"strings"
-
-	"github.com/louisevanderlith/husk/validation"
 )
 
 //Dataer is the primary interface that any "model" should implement
@@ -45,9 +43,9 @@ func ValidateStruct(obj interface{}) error {
 		tag := typeField.Tag.Get("hsk")
 
 		kind := valueField.Kind()
-		validator := validation.GetTypeValidator(kind)
+		validator := GetTypeValidator(kind)
 
-		meta := validation.GetMeta(tag, kind)
+		meta := GetMeta(tag, kind)
 		meta.PropName = typeField.Name
 		value := valueField.Interface()
 

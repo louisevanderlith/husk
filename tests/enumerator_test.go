@@ -1,14 +1,14 @@
 package tests
 
 import (
-	"github.com/louisevanderlith/husk/db"
 	"github.com/louisevanderlith/husk/hsk"
+	"github.com/louisevanderlith/husk/tests/sample"
 	"testing"
 )
 
 func TestNext_ShouldReturnNext(t *testing.T) {
-	ctx := db.NewContext()
-	results, err := ctx.ListEvents()
+	ctx := sample.NewEventContext()
+	results, err := ctx.FindEvents(1, 100)
 
 	if err != nil {
 		t.Fatal(err)

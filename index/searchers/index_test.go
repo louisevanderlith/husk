@@ -1,12 +1,14 @@
-package storers
+package searchers
 
 import (
 	"github.com/louisevanderlith/husk/hsk"
+	"github.com/louisevanderlith/husk/index"
+	"github.com/louisevanderlith/husk/persisted"
 	"testing"
 )
 
 func TestNewIndex_Add_GetsKey(t *testing.T) {
-	idx := NewIndex()
+	idx := index.New(IndexOf)
 	mta := hsk.NewMeta(hsk.NewPoint(0, 1))
 	k, err := idx.Add(mta)
 
@@ -21,7 +23,7 @@ func TestNewIndex_Add_GetsKey(t *testing.T) {
 }
 
 func TestNewIndex_Add_GetsMeta(t *testing.T) {
-	idx := NewIndex()
+	idx := index.New(IndexOf)
 	mta := hsk.NewMeta(hsk.NewPoint(0, 1))
 	k, err := idx.Add(mta)
 
@@ -52,7 +54,7 @@ func TestNewIndex_Add_GetsMeta(t *testing.T) {
 }
 
 func TestNewIndex_AddMany_GetsAllKeys(t *testing.T) {
-	idx := NewIndex()
+	idx := index.New(IndexOf)
 
 	for i := int64(0); i < 10; i++ {
 		mta := hsk.NewMeta(hsk.NewPoint(i, i+1))
@@ -75,7 +77,7 @@ func TestNewIndex_AddMany_GetsAllKeys(t *testing.T) {
 }
 
 func TestIndex_IndexOf(t *testing.T) {
-	idx := NewIndex()
+	idx := index.New(IndexOf)
 	mta := hsk.NewMeta(hsk.NewPoint(0, 1))
 	k, err := idx.Add(mta)
 
@@ -96,8 +98,8 @@ func TestIndex_IndexOf(t *testing.T) {
 }
 
 func TestSaveIndex(t *testing.T) {
-	DestroyContents("db")
-	idx := NewIndex()
+	hsk.DestroyContents("db")
+	idx := index.New(IndexOf)
 
 	for i := int64(0); i < 10; i++ {
 		mta := hsk.NewMeta(hsk.NewPoint(i, i+1))
@@ -114,7 +116,7 @@ func TestSaveIndex(t *testing.T) {
 		}
 	}
 
-	err := saveIndex("Event", idx)
+	err := persisted.SaveIndex("Event", idx)
 
 	if err != nil {
 		t.Error("Save Index Error", err)
@@ -123,8 +125,8 @@ func TestSaveIndex(t *testing.T) {
 }
 
 func TestSaveIndex_Reload(t *testing.T) {
-	DestroyContents("db")
-	idx := NewIndex()
+	hsk.DestroyContents("db")
+	idx := index.New(IndexOf)
 
 	for i := int64(0); i < 10; i++ {
 		mta := hsk.NewMeta(hsk.NewPoint(i, i+1))
@@ -141,21 +143,22 @@ func TestSaveIndex_Reload(t *testing.T) {
 		}
 	}
 
-	err := saveIndex("Event", idx)
+	err := persisted.SaveIndex("Event", idx)
 
 	if err != nil {
 		t.Error("Save Index Error", err)
 		return
 	}
 
-	idxFile, err := openIndex("Event")
+	idxFile, err := persisted.OpenIndex("Event")
 
 	if err != nil {
 		t.Error("Open Index Error", err)
 		return
 	}
 
-	sidx, err := loadIndex(idxFile)
+	sidx := index.New(IndexOf)
+	err = persisted.LoadIndex(sidx, idxFile)
 
 	if err != nil {
 		t.Error("Load Index Error", err)

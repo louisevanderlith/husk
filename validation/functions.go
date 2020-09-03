@@ -226,6 +226,14 @@ func pointerValidation(obj interface{}, meta tagMeta) (bool, []string) {
 func interfaceValidation(obj interface{}, meta tagMeta) (bool, []string) {
 	var issues []string
 
+	if d, ok := obj.(Dataer); ok {
+		err := d.Valid()
+
+		if err != nil {
+			issues = append(issues, err.Error())
+		}
+	}
+
 	if meta.Required && obj == nil {
 		issues = append(issues, getIDMessage(meta.PropName))
 	}

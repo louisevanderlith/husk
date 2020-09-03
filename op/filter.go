@@ -2,15 +2,10 @@ package op
 
 import (
 	"github.com/louisevanderlith/husk/hsk"
+	"github.com/louisevanderlith/husk/validation"
 	"reflect"
 	"time"
 )
-
-// Filter used to filter records while searching.
-type Filter interface {
-	// Enables a single central function to cast from husk.Dataer to <Entity>
-	Filter(obj hsk.Record) bool
-}
 
 type FilterFunc func(obj hsk.Record) bool
 
@@ -36,10 +31,10 @@ func EverythingBetween(start time.Time, end time.Time) FilterFunc {
 }
 
 // ByFields returns objects that have properties that match with the given object
-func ByFields(param hsk.Dataer) FilterFunc {
-	parmFields := hsk.GetFields(param)
+func ByFields(param validation.Dataer) FilterFunc {
+	parmFields := validation.GetFields(param)
 	return func(obj hsk.Record) bool {
-		objFields := hsk.GetFields(obj.Data())
+		objFields := validation.GetFields(obj.Data())
 		for k, v := range parmFields {
 			if !reflect.ValueOf(v).IsZero() && !reflect.DeepEqual(objFields[k], v) {
 				return false

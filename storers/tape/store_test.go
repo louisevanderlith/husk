@@ -1,71 +1,55 @@
 package tape
 
 import (
-	"github.com/louisevanderlith/husk/db"
 	"github.com/louisevanderlith/husk/hsk"
-	"github.com/louisevanderlith/husk/keys"
+	"github.com/louisevanderlith/husk/validation"
 	"reflect"
 	"testing"
 )
 
+type tapeRecord struct {
+	Name string `hsk:"size(128)"`
+}
+
+func (r tapeRecord) Valid() error {
+	return validation.ValidateStruct(r)
+}
+
 func TestTapeStore_Write(t *testing.T) {
-	store := newStore(reflect.TypeOf(db.Event{}))
+	store := NewStore(reflect.TypeOf(tapeRecord{}))
 
-	in := db.Event{
-		Type:      "WRITE",
-		RecordKey: keys.CrazyKey(),
-	}
+	in := tapeRecord{"WRITE"}
 
-	p, err := store.Write(in)
+	p := make(chan hsk.Point)
+	go store.Write(in, p)
 
-	if err != nil {
-		t.Error("Write Error", err)
-		return
-	}
-
-	if p.GetLength() == 0 {
-		t.Error("Unexpected Length", p.GetLength())
+	res := <-p
+	if res.GetLength() == 0 {
+		t.Error("Unexpected Length", res.GetLength())
 		return
 	}
 }
 
 func TestTapeStore_Read(t *testing.T) {
-	store := newStore(reflect.TypeOf(db.Event{}))
+	store := NewStore(reflect.TypeOf(tapeRecord{}))
 
-	in := db.Event{
-		Type:      "WRITE",
-		RecordKey: keys.CrazyKey(),
-	}
+	in := tapeRecord{"WRITE"}
 
-	p, err := store.Write(in)
+	p := make(chan hsk.Point)
+	go store.Write(in, p)
 
-	if err != nil {
-		t.Error("Write Error", err)
-		return
-	}
+	data := make(chan validation.Dataer)
+	go store.Read(<-p, data)
 
-	data := make(chan hsk.Dataer)
-	err = store.Read(p, data)
-
-	if err != nil {
-		t.Error("Read Error", err)
-		return
-	}
-
-	obj := (<-data).(db.Event)
-	if obj.Type != in.Type {
-		t.Error("Invalid Type; expected", in.Type, "got", obj.Type)
-		return
-	}
-
-	if obj.RecordKey.Compare(in.RecordKey) != 0 {
-		t.Error("Invalid RecordKey; expected", in.RecordKey, "got", obj.RecordKey)
+	obj := (<-data).(tapeRecord)
+	if obj.Name != in.Name {
+		t.Error("Invalid Name; expected", in.Name, "got", obj.Name)
 		return
 	}
 }
 
 func TestTapeStore_Close(t *testing.T) {
-	store := newStore(reflect.TypeOf(db.Event{}))
+	store := NewStore(reflect.TypeOf(tapeRecord{}))
 	err := store.Close()
 
 	if err != nil {
