@@ -5,23 +5,27 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/louisevanderlith/husk/hsk"
+	"github.com/louisevanderlith/husk/index"
+	"github.com/louisevanderlith/husk/index/searchers"
+	"github.com/louisevanderlith/husk/keys"
+	"github.com/louisevanderlith/husk/op"
+	"github.com/louisevanderlith/husk/persisted"
+	"github.com/louisevanderlith/husk/storers"
+	"github.com/louisevanderlith/husk/storers/tape"
+	"github.com/louisevanderlith/husk/validation"
+	"io"
 	"io/ioutil"
-	"log"
 	"reflect"
 )
 
-//Table controls the index and physical data tape for all records associated
-type Table struct {
-	t     reflect.Type
-	name  string
-	index Indexer
-	tape  Taper
+func init() {
+	gob.Register(&keys.TimeKey{})
+	gob.Register(hsk.NewMeta(nil))
+	gob.Register(hsk.NewPoint(0, 0))
 }
 
-//NewTable returns a Table
-func NewTable(obj Dataer) Tabler {
-	ensureDbDirectory()
-
+func NewTable(obj validation.Dataer) hsk.Table {
 	t := reflect.TypeOf(obj)
 
 	if t.Kind() == reflect.Ptr {
@@ -29,90 +33,133 @@ func NewTable(obj Dataer) Tabler {
 	}
 
 	gob.Register(obj)
-	name := t.Name()
-	idxName := getIndexName(name)
-	trackName := getRecordName(name)
 
-	idxFile, err := openFile(idxName)
+	err := persisted.CreateDirectory("db")
 
 	if err != nil {
 		panic(err)
 	}
 
-	defer idxFile.Close()
+	store := tape.NewStore(t, storers.GobEncoder, storers.GobDecoder)
+	return newTable(obj, store)
+}
 
-	index, err := loadIndex(idxFile)
+func newTable(obj validation.Dataer, store storers.Storage) hsk.Table {
+	t := reflect.TypeOf(obj)
+	iFile, err := persisted.OpenIndex(t.Name())
 
 	if err != nil {
 		panic(err)
 	}
 
-	return Table{
-		t:     t,
-		name:  name,
-		index: index,
-		tape:  newTape(trackName),
-	}
-}
-
-func (t Table) Type() reflect.Type {
-	return t.t
-}
-
-func (t Table) readData(m *meta) (Recorder, error) {
-	dObj := reflect.New(t.t)
-	dInf := dObj.Interface()
-	err := t.tape.Read(m.Point(), dInf)
+	indx := index.New(searchers.IndexOf)
+	err = persisted.LoadIndex(indx, iFile)
 
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	obj := dObj.Elem().Interface().(Dataer)
+	return table{
+		objT:  t,
+		idx:   indx,
+		store: store,
+	}
+}
 
-	return MakeRecord(m, obj), nil
+type table struct {
+	objT  reflect.Type
+	idx   hsk.Index
+	store storers.Storage
+}
+
+func (t table) SaveWriter(w io.Writer) error {
+	panic("implement me")
+}
+
+func (t table) Save() error {
+	return persisted.SaveIndex(t.Name(), t.idx)
+}
+
+func (t table) Type() reflect.Type {
+	return t.objT
+}
+
+func (t table) Name() string {
+	return t.objT.Name()
+}
+
+func (t table) filter(skipCount, limit int, f hsk.Filter) (<-chan hsk.Record, error) {
+	chnl := make(chan hsk.Record)
+	go func() {
+		for i, k := range t.idx.GetKeys() {
+			meta := t.idx.Get(k)
+
+			if meta == nil {
+				continue
+			}
+
+			data := make(chan validation.Dataer)
+			go t.store.Read(meta.Point(), data)
+
+			record := hsk.MakeRecord(k, <-data)
+			if f.Filter(record) {
+				if skipCount != 0 {
+					skipCount--
+					continue
+				}
+
+				if i > limit {
+					break
+				}
+			}
+		}
+
+		close(chnl)
+	}()
+
+	return chnl, nil
 }
 
 //FindByKey returns a Record which has the same Key
-func (t Table) FindByKey(key Key) (Recorder, error) {
-	var result Recorder
-	meta := t.index.Get(key)
+func (t table) FindByKey(k hsk.Key) (hsk.Record, error) {
+	meta := t.idx.Get(k)
 
 	if meta == nil {
-		msg := fmt.Sprintf("key %v not found in %s", key, t.name)
-
-		return result, errors.New(msg)
+		return nil, fmt.Errorf("key %v not found in %s", k, t.Name())
 	}
 
-	return t.readData(meta)
+	data := make(chan validation.Dataer)
+	go t.store.Read(meta.Point(), data)
+
+	return hsk.MakeRecord(k, <-data), nil
 }
 
 //Find returns a Collection of records matching the applied filter function.
-func (t Table) Find(page, pageSize int, filter Filterer) (Collection, error) {
-	result := NewRecordSet(page)
-	skipCount := (page - 1) * pageSize
+func (t table) Find(pageNo, pageSize int, filter hsk.Filter) (hsk.Page, error) {
+	result := hsk.NewRecordPage(pageNo, pageSize)
+	skipCount := (pageNo - 1) * pageSize
 
-	for _, k := range t.index.Entries() {
-		meta := t.index.Get(k)
+	for _, k := range t.idx.GetKeys() {
+		meta := t.idx.Get(k)
 
 		if meta == nil {
 			continue
 		}
 
-		rec, err := t.readData(meta)
+		data := make(chan validation.Dataer)
+		go t.store.Read(meta.Point(), data)
 
-		if err != nil {
-			return nil, err
-		}
+		record := hsk.MakeRecord(k, <-data)
 
-		if filter.Filter(rec.Data()) {
-			if skipCount == 0 && result.Count() < pageSize {
-				result.add(rec)
-			} else {
+		if filter.Filter(record) {
+			if skipCount != 0 {
 				skipCount--
+				continue
 			}
 
-			result.bean()
+			if !result.Add(record) {
+				break
+			}
 		}
 	}
 
@@ -120,99 +167,101 @@ func (t Table) Find(page, pageSize int, filter Filterer) (Collection, error) {
 }
 
 //FindFirst will return that first record that matches the 'filter'
-func (t Table) FindFirst(filter Filterer) (Recorder, error) {
-	res, err := t.Find(1, 1, filter)
+func (t table) FindFirst(filter hsk.Filter) (hsk.Record, error) {
+	for _, k := range t.idx.GetKeys() {
+		meta := t.idx.Get(k)
 
-	if err != nil {
-		return nil, err
+		if meta == nil {
+			continue
+		}
+
+		data := make(chan validation.Dataer)
+		go t.store.Read(meta.Point(), data)
+
+		record := hsk.MakeRecord(k, <-data)
+		if filter.Filter(record) {
+			return record, nil
+		}
 	}
 
-	rator := res.GetEnumerator()
-	if !rator.MoveNext() {
-		return nil, errors.New("no results")
-	}
-
-	return rator.Current(), nil
+	return nil, errors.New("no results")
 }
 
 //Exists will return true of any records match the filter.
-func (t Table) Exists(filter Filterer) bool {
+func (t table) Exists(filter hsk.Filter) bool {
 	_, err := t.FindFirst(filter)
 
 	return err == nil
 }
 
 //Create adds a new data object to the collection.
-func (t Table) Create(obj Dataer) (Recorder, error) {
+func (t table) Create(obj validation.Dataer) (hsk.Key, error) {
+	k, err := t.createNoSave(obj)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return k, t.Save()
+}
+
+func (t table) createNoSave(obj validation.Dataer) (hsk.Key, error) {
 	err := obj.Valid()
 
 	if err != nil {
 		return nil, err
 	}
 
-	point, err := t.tape.Write(obj)
+	point := make(chan hsk.Point)
+	go t.store.Write(obj, point)
 
-	if err != nil {
-		return nil, err
-	}
+	meta := hsk.NewMeta(<-point)
 
-	meta := t.index.CreateSpace(point)
-	t.index.Insert(meta)
-
-	record := MakeRecord(meta, obj)
-
-	return record, nil
+	return t.idx.Add(meta)
 }
 
 //CreateMulti calls Create on a collection of data objects.
-func (t Table) CreateMulti(objs ...Dataer) (int, error) {
-	count := 0
+func (t table) CreateMulti(objs ...validation.Dataer) ([]hsk.Key, error) {
+	var result []hsk.Key
+
 	for _, obj := range objs {
-		_, err := t.Create(obj)
+		k, err := t.createNoSave(obj)
 
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 
-		count++
+		result = append(result, k)
 	}
 
-	return count, nil
+	return result, t.Save()
 }
 
 //Update writes new data a record
-func (t Table) Update(record Recorder) error {
-	if record == nil {
-		return errors.New("record is empty")
+func (t table) Update(k hsk.Key, obj validation.Dataer) error {
+	meta := t.idx.Get(k)
+
+	if meta == nil {
+		return errors.New("not item for key")
 	}
 
-	data := record.Data()
-
-	if data == nil {
-		return errors.New("data is empty")
-	}
-
-	err := data.Valid()
+	err := obj.Valid()
 
 	if err != nil {
 		return err
 	}
 
-	point, err := t.tape.Write(data)
+	point := make(chan hsk.Point)
+	go t.store.Write(obj, point)
 
-	if err != nil {
-		return err
-	}
+	meta.Update(<-point)
 
-	meta := record.Meta()
-	meta.Updated(point)
-
-	return nil
+	return t.Save()
 }
 
 //Delete marks the Record as Disabled and removes it from the index.
-func (t Table) Delete(key Key) error {
-	deleted := t.index.Delete(key)
+func (t table) Delete(k hsk.Key) error {
+	deleted := t.idx.Delete(k)
 
 	if !deleted {
 		return errors.New("nothing deleted")
@@ -221,58 +270,33 @@ func (t Table) Delete(key Key) error {
 	return nil
 }
 
-//Calculate does fancy stuff
-func (t Table) Calculate(result interface{}, calculator Calculator) error {
-	for _, k := range t.index.Entries() {
-		meta := t.index.Get(k)
+//Map allows objects to be mapped to different structures
+func (t table) Map(result interface{}, calculator hsk.Mapper) error {
+	for _, k := range t.idx.GetKeys() {
+		meta := t.idx.Get(k)
 
 		if meta == nil {
 			continue
 		}
 
-		rec, err := t.readData(meta)
+		data := make(chan validation.Dataer)
+		go t.store.Read(meta.Point(), data)
 
-		if err != nil {
-			return err
-		}
+		record := hsk.MakeRecord(k, <-data)
 
-		if rec.Data() == nil {
-			log.Fatal("data nil for some reason")
-			continue
-		}
-
-		err = calculator.Calc(result, rec.Data())
-
-		if err != nil {
-			return err
-		}
+		return calculator.Map(result, record)
 	}
 
 	return nil
 }
 
-//Save writes the contents of the index
-func (t Table) Save() error {
-	indexName := getIndexName(t.name)
-	f, err := openFile(indexName)
-
-	if err != nil {
-		return err
-	}
-
-	defer f.Close()
-
-	ser := gob.NewEncoder(f)
-	return ser.Encode(t.index)
-}
-
 //Seed will load the seedfile into the husk database ONLY if it's empty.
-func (t Table) Seed(seedfile string) error {
-	if t.Exists(Everything()) {
+func (t table) Seed(seedfile string) error {
+	if t.Exists(op.Everything()) {
 		return nil
 	}
 
-	result := reflect.New(reflect.SliceOf(t.t)).Interface()
+	result := reflect.New(reflect.SliceOf(t.Type())).Interface()
 
 	byts, err := ioutil.ReadFile(seedfile)
 
@@ -289,8 +313,8 @@ func (t Table) Seed(seedfile string) error {
 	val := reflect.ValueOf(result).Elem()
 
 	for i := 0; i < val.Len(); i++ {
-		item := val.Index(i).Interface()
-		_, err := t.Create(item.(Dataer))
+		item := val.Index(i).Interface().(validation.Dataer)
+		_, err := t.Create(item)
 
 		if err != nil {
 			return err
@@ -298,12 +322,4 @@ func (t Table) Seed(seedfile string) error {
 	}
 
 	return nil
-}
-
-func ensureDbDirectory() {
-	created := createDirectory(dbPath)
-
-	if !created {
-		log.Println("couldn't create dbPath folder")
-	}
 }
