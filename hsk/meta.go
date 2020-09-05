@@ -1,9 +1,6 @@
 package hsk
 
 type Meta interface {
-	//AssignKey(k Key) error
-	//GetKey() Key
-
 	IsActive() bool
 	Disable()
 	Enable()
@@ -17,7 +14,11 @@ type meta struct {
 	Pointer Point
 }
 
-func NewMeta(p Point) Meta {
+func NewMeta() Meta {
+	return &meta{}
+}
+
+func NewMetaWithPoint(p Point) Meta {
 	return &meta{
 		Active:  true,
 		Pointer: p,
@@ -32,6 +33,7 @@ func (m *meta) Disable() {
 }
 
 func (m *meta) Update(p Point) {
+	m.Enable()
 	m.Pointer = p
 }
 

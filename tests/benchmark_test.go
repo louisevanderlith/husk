@@ -7,16 +7,13 @@ import (
 	"github.com/louisevanderlith/husk/tests/sample"
 )
 
-var (
-	benchCtx sample.JournalContext
-)
-
 func BenchmarkExist_Everything(b *testing.B) {
-	benchCtx = sample.NewContext()
+	benchCtx := sample.NewContext()
 	benchCtx.HasJournals()
 }
 
 func BenchmarkCount_JournalCount(b *testing.B) {
+	benchCtx := sample.NewContext()
 	count, err := benchCtx.CountJournals()
 
 	if err != nil {
@@ -28,6 +25,7 @@ func BenchmarkCount_JournalCount(b *testing.B) {
 }
 
 func BenchmarkFilter_FindByAuthor(b *testing.B) {
+	benchCtx := sample.NewContext()
 	page, err := benchCtx.FindJournalsByPublisher(1, 10, "Universidade Federal do Rio Grande")
 
 	if err != nil {
@@ -49,6 +47,7 @@ func BenchmarkFilter_FindByAuthor(b *testing.B) {
 }
 
 func TestCount_JournalCount(t *testing.T) {
+	benchCtx := sample.NewContext()
 	count, err := benchCtx.CountJournals()
 
 	if err != nil {
@@ -62,6 +61,7 @@ func TestCount_JournalCount(t *testing.T) {
 }
 
 func TestFind_SearchItems(t *testing.T) {
+	benchCtx := sample.NewContext()
 	set, err := benchCtx.FindJournalsByPublisher(1, 10, "University of Malaya")
 
 	if err != nil {

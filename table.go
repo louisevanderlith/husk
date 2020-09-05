@@ -1,58 +1,62 @@
 package husk
 
 import (
-	"encoding/gob"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/louisevanderlith/husk/collections"
 	"github.com/louisevanderlith/husk/hsk"
 	"github.com/louisevanderlith/husk/index"
-	"github.com/louisevanderlith/husk/index/searchers"
-	"github.com/louisevanderlith/husk/keys"
 	"github.com/louisevanderlith/husk/op"
 	"github.com/louisevanderlith/husk/persisted"
-	"github.com/louisevanderlith/husk/storers"
-	"github.com/louisevanderlith/husk/storers/tape"
+	"github.com/louisevanderlith/husk/records"
+	"github.com/louisevanderlith/husk/storage"
+	"github.com/louisevanderlith/husk/storage/tape"
 	"github.com/louisevanderlith/husk/validation"
 	"io"
-	"io/ioutil"
-	"reflect"
 )
 
-func init() {
-	gob.Register(&keys.TimeKey{})
-	gob.Register(hsk.NewMeta(nil))
-	gob.Register(hsk.NewPoint(0, 0))
+//Table is used to interact with records
+type Table interface {
+	Name() string
+	//Exists confirms the existence of a record
+	Exists(filter hsk.Filter) bool
+
+	//FindByKey finds a record with a matching key.
+	FindByKey(key hsk.Key) (hsk.Record, error)
+	//Find looks for records that match the filter.
+	Find(page, pageSize int, filter hsk.Filter) (records.Page, error)
+	//FindFirst does what Find does, but will only return one record.
+	FindFirst(filter hsk.Filter) (hsk.Record, error)
+
+	//Map can modify a result set with data values
+	Map(result interface{}, calculator hsk.Mapper) error
+
+	//Create saves a new object to the database
+	Create(obj validation.Dataer) (hsk.Key, error)
+	//CreateMulti saves multiple records
+	CreateMulti(objs ...validation.Dataer) ([]hsk.Key, error)
+	//Update records changes made to a record.
+	Update(key hsk.Key, obj validation.Dataer) error
+	//Delete removes a record with the matching key.
+	Delete(key hsk.Key) error
+
+	//Seeds data from a json file
+	//Seed(seedfile string) error
+	Seed(items collections.Enumerable) error
+
+	SaveWriter(w io.Writer) error
+	Save() error
 }
 
-func NewTable(obj validation.Dataer) hsk.Table {
-	t := reflect.TypeOf(obj)
-
-	if t.Kind() == reflect.Ptr {
-		panic("obj must not be a pointer")
-	}
-
-	gob.Register(obj)
-
-	err := persisted.CreateDirectory("db")
+func NewTable(obj validation.Dataer) Table {
+	store := tape.NewStore(obj, storage.GobEncoder, storage.GobDecoder)
+	iFile, err := persisted.OpenIndex(store.Name())
 
 	if err != nil {
 		panic(err)
 	}
 
-	store := tape.NewStore(t, storers.GobEncoder, storers.GobDecoder)
-	return newTable(obj, store)
-}
-
-func newTable(obj validation.Dataer, store storers.Storage) hsk.Table {
-	t := reflect.TypeOf(obj)
-	iFile, err := persisted.OpenIndex(t.Name())
-
-	if err != nil {
-		panic(err)
-	}
-
-	indx := index.New(searchers.IndexOf)
+	indx := index.New()
 	err = persisted.LoadIndex(indx, iFile)
 
 	if err != nil {
@@ -60,16 +64,14 @@ func newTable(obj validation.Dataer, store storers.Storage) hsk.Table {
 	}
 
 	return table{
-		objT:  t,
 		idx:   indx,
 		store: store,
 	}
 }
 
 type table struct {
-	objT  reflect.Type
 	idx   hsk.Index
-	store storers.Storage
+	store hsk.Storage
 }
 
 func (t table) SaveWriter(w io.Writer) error {
@@ -80,44 +82,35 @@ func (t table) Save() error {
 	return persisted.SaveIndex(t.Name(), t.idx)
 }
 
-func (t table) Type() reflect.Type {
-	return t.objT
-}
-
 func (t table) Name() string {
-	return t.objT.Name()
+	return t.store.Name()
 }
 
-func (t table) filter(skipCount, limit int, f hsk.Filter) (<-chan hsk.Record, error) {
-	chnl := make(chan hsk.Record)
-	go func() {
-		for i, k := range t.idx.GetKeys() {
-			meta := t.idx.Get(k)
+func (t table) filter(skipCount, limit int, f hsk.Filter, rec chan<- hsk.Record) {
+	data := make(chan hsk.Record)
 
-			if meta == nil {
-				continue
-			}
+	for _, k := range t.idx.GetKeys() {
+		meta := t.idx.Get(k)
 
-			data := make(chan validation.Dataer)
-			go t.store.Read(meta.Point(), data)
-
-			record := hsk.MakeRecord(k, <-data)
-			if f.Filter(record) {
-				if skipCount != 0 {
-					skipCount--
-					continue
-				}
-
-				if i > limit {
-					break
-				}
-			}
+		if meta == nil {
+			continue
 		}
 
-		close(chnl)
-	}()
+		go t.store.Read(meta.Point(), data)
+	}
 
-	return chnl, nil
+	for i := 0; i < limit; i++ {
+		obj := <-data
+
+		if f.Filter(obj) {
+			rec <- obj
+
+			if skipCount != 0 {
+				skipCount--
+				continue
+			}
+		}
+	}
 }
 
 //FindByKey returns a Record which has the same Key
@@ -128,15 +121,16 @@ func (t table) FindByKey(k hsk.Key) (hsk.Record, error) {
 		return nil, fmt.Errorf("key %v not found in %s", k, t.Name())
 	}
 
-	data := make(chan validation.Dataer)
+	data := make(chan hsk.Record)
+
 	go t.store.Read(meta.Point(), data)
 
-	return hsk.MakeRecord(k, <-data), nil
+	return <-data, nil
 }
 
 //Find returns a Collection of records matching the applied filter function.
-func (t table) Find(pageNo, pageSize int, filter hsk.Filter) (hsk.Page, error) {
-	result := hsk.NewRecordPage(pageNo, pageSize)
+func (t table) Find(pageNo, pageSize int, filter hsk.Filter) (records.Page, error) {
+	result := records.NewRecordPage(pageNo, pageSize)
 	skipCount := (pageNo - 1) * pageSize
 
 	for _, k := range t.idx.GetKeys() {
@@ -146,18 +140,17 @@ func (t table) Find(pageNo, pageSize int, filter hsk.Filter) (hsk.Page, error) {
 			continue
 		}
 
-		data := make(chan validation.Dataer)
+		data := make(chan hsk.Record)
 		go t.store.Read(meta.Point(), data)
 
-		record := hsk.MakeRecord(k, <-data)
-
-		if filter.Filter(record) {
+		rec := <-data
+		if filter.Filter(rec) {
 			if skipCount != 0 {
 				skipCount--
 				continue
 			}
 
-			if !result.Add(record) {
+			if !result.Add(rec) {
 				break
 			}
 		}
@@ -175,12 +168,12 @@ func (t table) FindFirst(filter hsk.Filter) (hsk.Record, error) {
 			continue
 		}
 
-		data := make(chan validation.Dataer)
+		data := make(chan hsk.Record)
 		go t.store.Read(meta.Point(), data)
 
-		record := hsk.MakeRecord(k, <-data)
-		if filter.Filter(record) {
-			return record, nil
+		rec := <-data
+		if filter.Filter(rec) {
+			return rec, nil
 		}
 	}
 
@@ -213,11 +206,19 @@ func (t table) createNoSave(obj validation.Dataer) (hsk.Key, error) {
 	}
 
 	point := make(chan hsk.Point)
-	go t.store.Write(obj, point)
 
-	meta := hsk.NewMeta(<-point)
+	meta := hsk.NewMeta()
+	k, err := t.idx.Add(meta)
 
-	return t.idx.Add(meta)
+	if err != nil {
+		return nil, err
+	}
+
+	go t.store.Write(hsk.MakeRecord(k, obj), point)
+
+	meta.Update(<-point)
+
+	return k, nil
 }
 
 //CreateMulti calls Create on a collection of data objects.
@@ -252,7 +253,8 @@ func (t table) Update(k hsk.Key, obj validation.Dataer) error {
 	}
 
 	point := make(chan hsk.Point)
-	go t.store.Write(obj, point)
+
+	go t.store.Write(hsk.MakeRecord(k, obj), point)
 
 	meta.Update(<-point)
 
@@ -267,7 +269,7 @@ func (t table) Delete(k hsk.Key) error {
 		return errors.New("nothing deleted")
 	}
 
-	return nil
+	return t.Save()
 }
 
 //Map allows objects to be mapped to different structures
@@ -279,42 +281,10 @@ func (t table) Map(result interface{}, calculator hsk.Mapper) error {
 			continue
 		}
 
-		data := make(chan validation.Dataer)
+		data := make(chan hsk.Record)
 		go t.store.Read(meta.Point(), data)
 
-		record := hsk.MakeRecord(k, <-data)
-
-		return calculator.Map(result, record)
-	}
-
-	return nil
-}
-
-//Seed will load the seedfile into the husk database ONLY if it's empty.
-func (t table) Seed(seedfile string) error {
-	if t.Exists(op.Everything()) {
-		return nil
-	}
-
-	result := reflect.New(reflect.SliceOf(t.Type())).Interface()
-
-	byts, err := ioutil.ReadFile(seedfile)
-
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(byts, result)
-
-	if err != nil {
-		return err
-	}
-
-	val := reflect.ValueOf(result).Elem()
-
-	for i := 0; i < val.Len(); i++ {
-		item := val.Index(i).Interface().(validation.Dataer)
-		_, err := t.Create(item)
+		err := calculator.Map(result, <-data)
 
 		if err != nil {
 			return err
@@ -322,4 +292,21 @@ func (t table) Seed(seedfile string) error {
 	}
 
 	return nil
+}
+
+func (t table) Seed(items collections.Enumerable) error {
+	if t.Exists(op.Everything()) {
+		return nil
+	}
+
+	itor := items.GetEnumerator()
+	for itor.MoveNext() {
+		_, err := t.createNoSave(itor.Current().(validation.Dataer))
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return t.Save()
 }

@@ -1,5 +1,7 @@
 package collections
 
+import "reflect"
+
 //Iterator allows iteration over items
 type Iterator interface {
 	Current() interface{}
@@ -9,23 +11,34 @@ type Iterator interface {
 
 type itor struct {
 	position int
-	items    []interface{}
+	items    reflect.Value
 }
 
-func NewIterator(items []interface{}) Iterator {
+func ReadOnlyList(slice reflect.Value) Enumerable {
+	return &itor{
+		position: -1,
+		items:    slice,
+	}
+}
+
+/*func NewIterator(items []interface{}) Iterator {
 	return &itor{
 		position: -1,
 		items:    items,
 	}
+}*/
+
+func (i *itor) GetEnumerator() Iterator {
+	return i
 }
 
 func (i *itor) Current() interface{} {
-	return i.items[i.position]
+	return i.items.Index(i.position).Interface()
 }
 
 func (i *itor) MoveNext() bool {
 	i.position++
-	return i.position < len(i.items)
+	return i.position < i.items.Len()
 }
 
 func (i *itor) Reset() {

@@ -27,6 +27,12 @@ func TestCreateAndFind(t *testing.T) {
 	}
 
 	rec, err := tbl.FindByKey(k)
+
+	if err != nil {
+		t.Error("Find Error", err)
+		return
+	}
+
 	act := rec.Data().(sample.Event)
 	if act.Type != in.Type {
 		t.Error("Invalid Type; expected", in.Type, "got", act.Type)

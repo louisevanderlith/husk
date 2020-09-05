@@ -4,14 +4,15 @@ import (
 	"github.com/louisevanderlith/husk"
 	"github.com/louisevanderlith/husk/hsk"
 	"github.com/louisevanderlith/husk/op"
+	"github.com/louisevanderlith/husk/records"
 )
 
 type EventContext interface {
 	DeleteEvent(k hsk.Key) error
 	UpdateEvent(k hsk.Key, obj Event) error
 	GetEvent(k hsk.Key) (hsk.Record, error)
-	FindEvents(page, size int) (hsk.Page, error)
-	FindEventsByType(page, size int, name string) (hsk.Page, error)
+	FindEvents(page, size int) (records.Page, error)
+	FindEventsByType(page, size int, name string) (records.Page, error)
 	HasEvents() bool
 	CreateEvent(t string, rel hsk.Key) (hsk.Key, error)
 }
@@ -25,7 +26,7 @@ func NewEventContext() EventContext {
 }
 
 type eventcontext struct {
-	Events hsk.Table
+	Events husk.Table
 }
 
 func (e eventcontext) DeleteEvent(k hsk.Key) error {
@@ -40,11 +41,11 @@ func (e eventcontext) GetEvent(k hsk.Key) (hsk.Record, error) {
 	return e.Events.FindByKey(k)
 }
 
-func (e eventcontext) FindEvents(page, size int) (hsk.Page, error) {
+func (e eventcontext) FindEvents(page, size int) (records.Page, error) {
 	return e.Events.Find(page, size, op.Everything())
 }
 
-func (e eventcontext) FindEventsByType(page, size int, name string) (hsk.Page, error) {
+func (e eventcontext) FindEventsByType(page, size int, name string) (records.Page, error) {
 	return e.Events.Find(page, size, ByType(name))
 }
 

@@ -37,7 +37,7 @@ func OpenIndex(name string) (*os.File, error) {
 	}
 
 	filePath := fmt.Sprintf("db/%s.Index.husk", name)
-	return os.Create(filePath)
+	return os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0644)
 }
 
 func SaveIndex(name string, i hsk.Index) error {

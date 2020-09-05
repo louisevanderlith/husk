@@ -1,14 +1,15 @@
-package hsk
+package records
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/louisevanderlith/husk/collections"
+	"github.com/louisevanderlith/husk/hsk"
 )
 
 //Page represents a piece of a larger dataset.
 type Page interface {
-	Add(record Record) bool
+	Add(record hsk.Record) bool
 	collections.Enumerable
 	Prev() string
 	Number() int
@@ -18,7 +19,7 @@ type Page interface {
 }
 
 type page struct {
-	records collections.List
+	records Collection
 	number  int
 	size    int
 	hasMore bool
@@ -29,7 +30,7 @@ func NewRecordPage(number, size int) Page {
 	return &page{
 		number:  number,
 		size:    size,
-		records: collections.NewList(),
+		records: NewCollection(),
 		hasMore: false,
 	}
 }
@@ -70,7 +71,7 @@ func (s *page) Any() bool {
 	return s.records.Count() > 0
 }
 
-func (s *page) Add(rec Record) bool {
+func (s *page) Add(rec hsk.Record) bool {
 	if s.hasMore {
 		return false
 	}
@@ -88,7 +89,7 @@ func (s *page) MarshalJSON() ([]byte, error) {
 		Previous string
 		Next     string
 		Length   int
-		Records  collections.List
+		Records  Collection
 	}{
 		Page:     s.number,
 		Previous: s.Prev(),

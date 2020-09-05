@@ -1,28 +1,34 @@
 package index
 
 import (
+	"encoding/gob"
 	"errors"
 	"github.com/louisevanderlith/husk/hsk"
 	"github.com/louisevanderlith/husk/keys"
+	"sort"
 	"sync"
 	"time"
 )
 
-func New(search searchFunc) hsk.Index {
+func init() {
+	gob.Register(hsk.NewMeta())
+	gob.Register(hsk.NewPoint(0, 0))
+}
+
+func New() hsk.Index {
 	return &index{
-		search: search,
 		rwm:    sync.RWMutex{},
-		Values: make(map[int]hsk.Meta),
+		Values: make(map[hsk.Key]hsk.Meta),
 		Keys:   nil,
 	}
 }
 
-type searchFunc func(keys []hsk.Key, key hsk.Key) int
+type searchFunc func(n int, f func(int) bool) int
 
 type index struct {
 	search searchFunc
 	rwm    sync.RWMutex
-	Values map[int]hsk.Meta
+	Values map[hsk.Key]hsk.Meta
 	Keys   []hsk.Key
 }
 
@@ -33,14 +39,16 @@ func (i *index) Add(m hsk.Meta) (hsk.Key, error) {
 		return nil, errors.New("unable to generate key")
 	}
 
+	idx := search(i.Keys, k)
+
+	i.Keys = append(i.Keys, nil)
+	copy(i.Keys[idx+1:], i.Keys[idx:])
+	i.Keys[idx] = k
+
 	i.rwm.Lock()
 	defer i.rwm.Unlock()
 
-	i.Values[len(i.Keys)] = m
-
-	//key in-front
-	tmp := []hsk.Key{k}
-	i.Keys = append(tmp, i.Keys...)
+	i.Values[k] = m
 
 	return k, nil
 }
@@ -55,7 +63,7 @@ func (i *index) Set(k hsk.Key, v hsk.Meta) error {
 	i.rwm.Lock()
 	defer i.rwm.Unlock()
 
-	i.Values[idx] = v
+	i.Values[k] = v
 
 	return nil
 }
@@ -70,7 +78,7 @@ func (i *index) Get(k hsk.Key) hsk.Meta {
 	i.rwm.RLock()
 	defer i.rwm.RUnlock()
 
-	rec, ok := i.Values[idx]
+	rec, ok := i.Values[k]
 
 	if !ok {
 		return nil
@@ -96,7 +104,7 @@ func (i *index) Delete(k hsk.Key) bool {
 	i.rwm.Lock()
 	defer i.rwm.Unlock()
 
-	meta := i.Values[idx]
+	meta := i.Values[k]
 
 	if meta == nil {
 		return false
@@ -112,7 +120,22 @@ func (i *index) GetKeys() []hsk.Key {
 }
 
 func (i *index) IndexOf(k hsk.Key) int {
-	return i.search(i.Keys, k)
+	idx := search(i.Keys, k)
+
+	if idx < len(i.Keys) && i.Keys[idx].Compare(k) == 0 {
+		return idx
+	}
+
+	return -1
+}
+
+func search(keys []hsk.Key, k hsk.Key) int {
+	return sort.Search(len(keys), func(n int) bool {
+		curr := keys[n]
+		//Smaller or Equals, since husk is ordered by Created Date desc
+		comp := curr.Compare(k)
+		return comp <= 0
+	})
 }
 
 //getNextKey returns the next available key

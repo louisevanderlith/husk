@@ -1,15 +1,20 @@
-package searchers
+package index
 
 import (
+	"encoding/gob"
 	"github.com/louisevanderlith/husk/hsk"
-	"github.com/louisevanderlith/husk/index"
+	"github.com/louisevanderlith/husk/keys"
 	"github.com/louisevanderlith/husk/persisted"
 	"testing"
 )
 
+func init() {
+	gob.Register(keys.CrazyKey())
+}
+
 func TestNewIndex_Add_GetsKey(t *testing.T) {
-	idx := index.New(IndexOf)
-	mta := hsk.NewMeta(hsk.NewPoint(0, 1))
+	idx := New()
+	mta := hsk.NewMetaWithPoint(hsk.NewPoint(0, 1))
 	k, err := idx.Add(mta)
 
 	if err != nil {
@@ -23,9 +28,16 @@ func TestNewIndex_Add_GetsKey(t *testing.T) {
 }
 
 func TestNewIndex_Add_GetsMeta(t *testing.T) {
-	idx := index.New(IndexOf)
-	mta := hsk.NewMeta(hsk.NewPoint(0, 1))
+	idx := New()
+	mta := hsk.NewMetaWithPoint(hsk.NewPoint(0, 1))
 	k, err := idx.Add(mta)
+
+	if err != nil {
+		t.Error("Add Error", err)
+		return
+	}
+
+	_, err = idx.Add(hsk.NewMetaWithPoint(hsk.NewPoint(1, 4)))
 
 	if err != nil {
 		t.Error("Add Error", err)
@@ -54,10 +66,10 @@ func TestNewIndex_Add_GetsMeta(t *testing.T) {
 }
 
 func TestNewIndex_AddMany_GetsAllKeys(t *testing.T) {
-	idx := index.New(IndexOf)
+	idx := New()
 
 	for i := int64(0); i < 10; i++ {
-		mta := hsk.NewMeta(hsk.NewPoint(i, i+1))
+		mta := hsk.NewMetaWithPoint(hsk.NewPoint(i, i+1))
 		k, err := idx.Add(mta)
 
 		if err != nil {
@@ -77,8 +89,8 @@ func TestNewIndex_AddMany_GetsAllKeys(t *testing.T) {
 }
 
 func TestIndex_IndexOf(t *testing.T) {
-	idx := index.New(IndexOf)
-	mta := hsk.NewMeta(hsk.NewPoint(0, 1))
+	idx := New()
+	mta := hsk.NewMetaWithPoint(hsk.NewPoint(0, 1))
 	k, err := idx.Add(mta)
 
 	if err != nil {
@@ -98,11 +110,11 @@ func TestIndex_IndexOf(t *testing.T) {
 }
 
 func TestSaveIndex(t *testing.T) {
-	hsk.DestroyContents("db")
-	idx := index.New(IndexOf)
+	persisted.DestroyContents("db")
+	idx := New()
 
 	for i := int64(0); i < 10; i++ {
-		mta := hsk.NewMeta(hsk.NewPoint(i, i+1))
+		mta := hsk.NewMetaWithPoint(hsk.NewPoint(i, i+1))
 		k, err := idx.Add(mta)
 
 		if err != nil {
@@ -125,11 +137,11 @@ func TestSaveIndex(t *testing.T) {
 }
 
 func TestSaveIndex_Reload(t *testing.T) {
-	hsk.DestroyContents("db")
-	idx := index.New(IndexOf)
+	persisted.DestroyContents("db")
+	idx := New()
 
 	for i := int64(0); i < 10; i++ {
-		mta := hsk.NewMeta(hsk.NewPoint(i, i+1))
+		mta := hsk.NewMetaWithPoint(hsk.NewPoint(i, i+1))
 		k, err := idx.Add(mta)
 
 		if err != nil {
@@ -157,7 +169,7 @@ func TestSaveIndex_Reload(t *testing.T) {
 		return
 	}
 
-	sidx := index.New(IndexOf)
+	sidx := New()
 	err = persisted.LoadIndex(sidx, idxFile)
 
 	if err != nil {
