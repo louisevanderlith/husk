@@ -1,7 +1,9 @@
-package storers
+package storage
 
 import (
 	"encoding/gob"
+	"encoding/json"
+	"encoding/xml"
 	"io"
 )
 
@@ -22,4 +24,20 @@ func GobEncoder(w io.Writer) Encoder {
 
 func GobDecoder(r io.Reader) Decoder {
 	return gob.NewDecoder(r)
+}
+
+func JSONEncoder(w io.Writer) Encoder {
+	return json.NewEncoder(w)
+}
+
+func JSONDecoder(r io.Reader) Decoder {
+	return json.NewDecoder(r)
+}
+
+func XMLEncoder(w io.Writer) Encoder {
+	return xml.NewEncoder(w)
+}
+
+func XMLDecoder(r io.Reader) Decoder {
+	return xml.NewDecoder(r)
 }

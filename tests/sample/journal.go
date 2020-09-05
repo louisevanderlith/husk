@@ -14,7 +14,7 @@ type Journal struct {
 }
 
 func (j Journal) Valid() error {
-	return validation.ValidateStruct(j)
+	return validation.Struct(j)
 }
 
 type Entry struct {

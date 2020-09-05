@@ -11,5 +11,5 @@ type Event struct {
 }
 
 func (e Event) Valid() error {
-	return validation.ValidateStruct(e)
+	return validation.Struct(e)
 }

@@ -31,7 +31,7 @@ func GetFields(t Dataer) map[string]interface{} {
 
 // ValidateStruct will read 'hsk' tags on properties, to validate their values
 // Properties without the 'hsk' tag, will be considered 'Required'
-func ValidateStruct(obj interface{}) error {
+func Struct(obj interface{}) error {
 	var issues []string
 
 	val := reflect.ValueOf(obj)

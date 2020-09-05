@@ -29,7 +29,7 @@ func TestCreate_MustPersist(t *testing.T) {
 		return
 	}
 
-	if againP.GetKey() != k {
+	if againP.GetKey().Compare(k) != 0 {
 		t.Errorf("Expected %s, %s", k, againP.GetKey())
 	}
 }
