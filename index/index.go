@@ -18,7 +18,7 @@ func init() {
 func New() hsk.Index {
 	return &index{
 		rwm:    sync.RWMutex{},
-		Values: make(map[hsk.Key]hsk.Meta),
+		Values: make(map[string]hsk.Meta),
 		Keys:   nil,
 	}
 }
@@ -28,7 +28,7 @@ type searchFunc func(n int, f func(int) bool) int
 type index struct {
 	search searchFunc
 	rwm    sync.RWMutex
-	Values map[hsk.Key]hsk.Meta
+	Values map[string]hsk.Meta
 	Keys   []hsk.Key
 }
 
@@ -48,7 +48,7 @@ func (i *index) Add(m hsk.Meta) (hsk.Key, error) {
 	i.rwm.Lock()
 	defer i.rwm.Unlock()
 
-	i.Values[k] = m
+	i.Values[k.String()] = m
 
 	return k, nil
 }
@@ -63,7 +63,7 @@ func (i *index) Set(k hsk.Key, v hsk.Meta) error {
 	i.rwm.Lock()
 	defer i.rwm.Unlock()
 
-	i.Values[k] = v
+	i.Values[k.String()] = v
 
 	return nil
 }
@@ -78,7 +78,7 @@ func (i *index) Get(k hsk.Key) hsk.Meta {
 	i.rwm.RLock()
 	defer i.rwm.RUnlock()
 
-	rec, ok := i.Values[k]
+	rec, ok := i.Values[k.String()]
 
 	if !ok {
 		return nil
@@ -104,7 +104,7 @@ func (i *index) Delete(k hsk.Key) bool {
 	i.rwm.Lock()
 	defer i.rwm.Unlock()
 
-	meta := i.Values[k]
+	meta := i.Values[k.String()]
 
 	if meta == nil {
 		return false

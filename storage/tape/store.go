@@ -6,6 +6,7 @@ import (
 	"github.com/louisevanderlith/husk/hsk"
 	"github.com/louisevanderlith/husk/keys"
 	"github.com/louisevanderlith/husk/persisted"
+	"github.com/louisevanderlith/husk/records"
 	"github.com/louisevanderlith/husk/storage"
 	"github.com/louisevanderlith/husk/validation"
 	"io"
@@ -47,7 +48,7 @@ func NewStore(obj validation.Dataer, encfunc storage.NewEncoder, decfunc storage
 	}
 
 	return &tapeStore{
-		name:  t.Name(),
+		t:     t,
 		enc:   encfunc,
 		dec:   decfunc,
 		track: track,
@@ -56,18 +57,22 @@ func NewStore(obj validation.Dataer, encfunc storage.NewEncoder, decfunc storage
 
 //tapeStore 101[0]00100011
 type tapeStore struct {
-	name  string
+	t     reflect.Type
 	enc   storage.NewEncoder
 	dec   storage.NewDecoder
 	track *os.File
 }
 
 func (ts *tapeStore) Name() string {
-	return ts.name
+	return ts.t.Name()
+}
+
+func (ts *tapeStore) ZeroValue() validation.Dataer {
+	return reflect.Zero(ts.t).Interface().(validation.Dataer)
 }
 
 func (ts *tapeStore) Read(p hsk.Point, res chan<- hsk.Record) {
-	rec := hsk.NewRecord()
+	rec := records.NewRecord(ts.ZeroValue())
 	r := io.NewSectionReader(ts.track, p.GetOffset(), p.GetLength())
 
 	serial := ts.dec(r)

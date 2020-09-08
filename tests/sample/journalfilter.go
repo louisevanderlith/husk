@@ -7,14 +7,14 @@ import (
 
 func ByPublisher(name string) op.FilterFunc {
 	return func(rec hsk.Record) bool {
-		obj := rec.Data().(Journal)
+		obj := rec.GetValue().(Journal)
 		return obj.Entry.Publisher == name
 	}
 }
 
 func ByObject(parm Journal) op.FilterFunc {
 	return func(rec hsk.Record) bool {
-		obj := rec.Data().(Journal)
+		obj := rec.GetValue().(Journal)
 		//More fields can be added
 
 		return len(parm.Entry.Title) == 0 || obj.Entry.Title == parm.Entry.Title

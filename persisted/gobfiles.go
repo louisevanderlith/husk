@@ -20,13 +20,7 @@ func LoadIndex(result hsk.Index, indexFile *os.File) error {
 	}
 
 	dec := gob.NewDecoder(indexFile)
-	err = dec.Decode(result)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return dec.Decode(result)
 }
 
 func OpenIndex(name string) (*os.File, error) {

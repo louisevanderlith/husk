@@ -4,6 +4,7 @@ import (
 	"github.com/louisevanderlith/husk/hsk"
 	"github.com/louisevanderlith/husk/keys"
 	"github.com/louisevanderlith/husk/persisted"
+	"github.com/louisevanderlith/husk/records"
 	"github.com/louisevanderlith/husk/validation"
 	"testing"
 )
@@ -20,7 +21,7 @@ func BenchmarkTapeStore_Write(b *testing.B) {
 	store := NewDefaultStore(tapeRecord{})
 
 	in := tapeRecord{"WRITE"}
-	rec := hsk.MakeRecord(keys.CrazyKey(), in)
+	rec := records.MakeRecord(keys.CrazyKey(), in)
 	p := make(chan hsk.Point)
 	go store.Write(rec, p)
 
@@ -36,7 +37,7 @@ func TestTapeStore_Write(t *testing.T) {
 	store := NewDefaultStore(tapeRecord{})
 
 	in := tapeRecord{"WRITE"}
-	rec := hsk.MakeRecord(keys.CrazyKey(), in)
+	rec := records.MakeRecord(keys.CrazyKey(), in)
 	p := make(chan hsk.Point)
 	go store.Write(rec, p)
 
@@ -51,14 +52,14 @@ func BenchmarkTapeStore_Read(b *testing.B) {
 	store := NewDefaultStore(tapeRecord{})
 
 	in := tapeRecord{"WRITE"}
-	rec := hsk.MakeRecord(keys.CrazyKey(), in)
+	rec := records.MakeRecord(keys.CrazyKey(), in)
 	p := make(chan hsk.Point)
 	go store.Write(rec, p)
 
 	data := make(chan hsk.Record)
 	go store.Read(<-p, data)
 
-	obj := (<-data).Data().(tapeRecord)
+	obj := (<-data).GetValue().(tapeRecord)
 
 	if obj.Name != in.Name {
 		b.Error("Invalid Name; expected", in.Name, "got", obj.Name)
@@ -70,14 +71,14 @@ func TestTapeStore_Read(t *testing.T) {
 	store := NewDefaultStore(tapeRecord{})
 
 	in := tapeRecord{"WRITE"}
-	rec := hsk.MakeRecord(keys.CrazyKey(), in)
+	rec := records.MakeRecord(keys.CrazyKey(), in)
 	p := make(chan hsk.Point)
 	go store.Write(rec, p)
 
 	data := make(chan hsk.Record)
 	go store.Read(<-p, data)
 
-	obj := (<-data).Data().(tapeRecord)
+	obj := (<-data).GetValue().(tapeRecord)
 	if obj.Name != in.Name {
 		t.Error("Invalid Name; expected", in.Name, "got", obj.Name)
 		return

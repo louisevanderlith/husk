@@ -14,7 +14,7 @@ import (
 type TimeKey struct {
 	//Stamp is the EPOCH Creation Time
 	Stamp int64
-	//ID increments with dulpicate Stamps
+	//ID increments with duplicate Stamps
 	ID int64
 }
 

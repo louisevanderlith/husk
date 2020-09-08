@@ -38,7 +38,7 @@ func BenchmarkFilter_FindByAuthor(b *testing.B) {
 	for itor.MoveNext() {
 		curr := itor.Current().(hsk.Record)
 
-		b.Log(curr.Data())
+		b.Log(curr.GetValue())
 	}
 
 	if page.Count() != 6 {
@@ -74,7 +74,7 @@ func TestFind_SearchItems(t *testing.T) {
 	for itor.MoveNext() {
 		curr := itor.Current().(hsk.Record)
 
-		t.Log(curr.Data())
+		t.Log(curr.GetValue())
 	}
 
 	if set.Count() != 5 {

@@ -130,7 +130,7 @@ func (t table) FindByKey(k hsk.Key) (hsk.Record, error) {
 
 //Find returns a Collection of records matching the applied filter function.
 func (t table) Find(pageNo, pageSize int, filter hsk.Filter) (records.Page, error) {
-	result := records.NewRecordPage(pageNo, pageSize)
+	result := records.NewRecordPage(t.store.ZeroValue(), pageNo, pageSize, pageSize*(pageNo+1))
 	skipCount := (pageNo - 1) * pageSize
 
 	for _, k := range t.idx.GetKeys() {
@@ -214,7 +214,7 @@ func (t table) createNoSave(obj validation.Dataer) (hsk.Key, error) {
 		return nil, err
 	}
 
-	go t.store.Write(hsk.MakeRecord(k, obj), point)
+	go t.store.Write(records.MakeRecord(k, obj), point)
 
 	meta.Update(<-point)
 
@@ -254,7 +254,7 @@ func (t table) Update(k hsk.Key, obj validation.Dataer) error {
 
 	point := make(chan hsk.Point)
 
-	go t.store.Write(hsk.MakeRecord(k, obj), point)
+	go t.store.Write(records.MakeRecord(k, obj), point)
 
 	meta.Update(<-point)
 

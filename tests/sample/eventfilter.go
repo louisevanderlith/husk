@@ -7,7 +7,7 @@ import (
 
 func ByType(t string) op.FilterFunc {
 	return func(rec hsk.Record) bool {
-		obj := rec.Data().(Event)
+		obj := rec.GetValue().(Event)
 		return obj.Type == t
 	}
 }
