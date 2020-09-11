@@ -33,7 +33,7 @@ func TestUpdate_MustPersist(t *testing.T) {
 		return
 	}
 
-	p := rec.Data().(sample.Event)
+	p := rec.GetValue().(sample.Event)
 	p.Type = "DELETE"
 
 	err = ctx.UpdateEvent(k, p)
@@ -49,7 +49,7 @@ func TestUpdate_MustPersist(t *testing.T) {
 		t.Error("Get Error", err)
 	}
 
-	againData := againP.Data().(sample.Event)
+	againData := againP.GetValue().(sample.Event)
 
 	if againData.Type != p.Type {
 		t.Errorf("Expected %v, got %v", p.Type, againData.Type)

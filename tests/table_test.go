@@ -33,7 +33,7 @@ func TestCreateAndFind(t *testing.T) {
 		return
 	}
 
-	act := rec.Data().(sample.Event)
+	act := rec.GetValue().(sample.Event)
 	if act.Type != in.Type {
 		t.Error("Invalid Type; expected", in.Type, "got", act.Type)
 	}
@@ -59,7 +59,7 @@ func TestUpdate(t *testing.T) {
 	}
 
 	rec, err := tbl.FindByKey(k)
-	act := rec.Data().(sample.Event)
+	act := rec.GetValue().(sample.Event)
 	if act.Type != in.Type {
 		t.Error("Invalid Name; expected", in.Type, "got", in.Type)
 	}

@@ -34,7 +34,7 @@ func EverythingBetween(start time.Time, end time.Time) FilterFunc {
 func ByFields(param validation.Dataer) FilterFunc {
 	parmFields := validation.GetFields(param)
 	return func(obj hsk.Record) bool {
-		objFields := validation.GetFields(obj.Data())
+		objFields := validation.GetFields(obj.GetValue())
 		for k, v := range parmFields {
 			if !reflect.ValueOf(v).IsZero() && !reflect.DeepEqual(objFields[k], v) {
 				return false
