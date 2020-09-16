@@ -17,13 +17,6 @@ type Page interface {
 	Any() bool
 }
 
-type page struct {
-	Records Collection
-	Number  int
-	Size    int
-	Limit   int
-}
-
 /*
 	Page     int
 	Previous string
@@ -47,6 +40,13 @@ func NewResultPage(t validation.Dataer) Page {
 	return &page{
 		Records: CollectionOf(t),
 	}
+}
+
+type page struct {
+	Records Collection
+	Number  int
+	Size    int
+	Limit   int
 }
 
 func (s *page) GetEnumerator() collections.Iterator {

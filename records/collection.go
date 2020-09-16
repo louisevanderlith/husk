@@ -20,6 +20,7 @@ type Collection interface {
 	Remove(rec hsk.Record)
 	RemoveAt(index int)
 	Count() int
+	ToSlice() []hsk.Record
 }
 
 func NewCollection() Collection {
@@ -33,22 +34,8 @@ func CollectionOf(t validation.Dataer) Collection {
 	}
 }
 
-type SliceORecords []hsk.Record
-
-func createCollection(obj validation.Dataer) SliceORecords {
-	rec := NewRecord(obj)
-	//coll := reflect.Zero(reflect.SliceOf(reflect.TypeOf(rec)))
-
-	result := SliceORecords{rec}
-	//val := reflect.ValueOf(&result)
-	//val.Set(coll)
-
-	//return result
-	return result
-}
-
 type collection struct {
-	items SliceORecords //[]hsk.Record
+	items []hsk.Record
 	of    validation.Dataer
 }
 
@@ -126,6 +113,10 @@ func NewData(obj validation.Dataer) (validation.Dataer, error) {
 	return result, nil
 }
 
+func (c *collection) ToSlice() []hsk.Record {
+	return c.items
+}
+
 func (c *collection) UnmarshalJSON(b []byte) error {
 	var rows []json.RawMessage
 	err := json.Unmarshal(b, &rows)
@@ -147,7 +138,6 @@ func (c *collection) UnmarshalJSON(b []byte) error {
 	}
 
 	return nil
-	//return json.Unmarshal(b, &c.items)
 }
 
 func (c *collection) MarshalJSON() ([]byte, error) {
