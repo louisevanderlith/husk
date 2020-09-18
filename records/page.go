@@ -15,6 +15,7 @@ type Page interface {
 	Next() string
 	Count() int
 	Any() bool
+	GetRecords() Collection
 }
 
 /*
@@ -26,12 +27,11 @@ type Page interface {
 */
 
 //NewRecordPage creates a data page for records
-func NewRecordPage(t validation.Dataer, pageNo, pageSize, batchLength int) Page {
+func NewRecordPage(pageNo, pageSize int) Page {
 	return &page{
 		Records: NewCollection(),
 		Number:  pageNo,
 		Size:    pageSize,
-		Limit:   batchLength,
 	}
 }
 
@@ -46,11 +46,15 @@ type page struct {
 	Records Collection
 	Number  int
 	Size    int
-	Limit   int
+	HasMore bool
 }
 
 func (s *page) GetEnumerator() collections.Iterator {
 	return s.Records.GetEnumerator()
+}
+
+func (s *page) GetRecords() Collection {
+	return s.Records
 }
 
 //Prev returns the Number and Size of the previous page, if available
@@ -66,7 +70,7 @@ func (s *page) Prev() string {
 
 //Next returns the Number and Size of the next page, if available
 func (s *page) Next() string {
-	if s.Limit <= (s.Number * s.Size) {
+	if !s.HasMore {
 		return ""
 	}
 
@@ -84,7 +88,8 @@ func (s *page) Any() bool {
 }
 
 func (s *page) Add(rec hsk.Record) bool {
-	if s.Count() == s.Limit {
+	if s.Count() == s.Size {
+		s.HasMore = true
 		return false
 	}
 

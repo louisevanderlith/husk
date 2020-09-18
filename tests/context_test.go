@@ -1,11 +1,9 @@
 package tests
 
 import (
-	"encoding/json"
 	"github.com/louisevanderlith/husk/hsk"
 	"github.com/louisevanderlith/husk/keys"
 	"github.com/louisevanderlith/husk/tests/sample"
-	"strings"
 	"testing"
 )
 
@@ -151,21 +149,5 @@ func TestFilter_FindEverything_MustBe10(t *testing.T) {
 
 	if records.Count() != 10 {
 		t.Errorf("Expecting 10, got %d", records.Count())
-	}
-}
-
-func TestRecordSet_ToJSON_MustBeClean(t *testing.T) {
-	ctx := sample.NewEventContext()
-	rows, err := ctx.FindEvents(1, 100)
-
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-
-	bits, _ := json.Marshal(rows)
-
-	if strings.Contains(string(bits), "Value") {
-		t.Error("Final Object has Value")
 	}
 }
