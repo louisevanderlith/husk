@@ -130,9 +130,10 @@ func (t table) FindByKey(k hsk.Key) (hsk.Record, error) {
 
 //Find returns a Collection of records matching the applied filter function.
 func (t table) Find(pageNo, pageSize int, filter hsk.Filter) (records.Page, error) {
-	result := records.NewRecordPage(t.store.ZeroValue(), pageNo, pageSize, pageSize*(pageNo+1))
+	result := records.NewRecordPage(pageNo, pageSize)
 	skipCount := (pageNo - 1) * pageSize
-
+	totalRead := skipCount + pageSize + 1
+	data := make(chan hsk.Record, totalRead)
 	for _, k := range t.idx.GetKeys() {
 		meta := t.idx.Get(k)
 
@@ -140,9 +141,10 @@ func (t table) Find(pageNo, pageSize int, filter hsk.Filter) (records.Page, erro
 			continue
 		}
 
-		data := make(chan hsk.Record)
 		go t.store.Read(meta.Point(), data)
+	}
 
+	for {
 		rec := <-data
 		if filter.Filter(rec) {
 			if skipCount != 0 {

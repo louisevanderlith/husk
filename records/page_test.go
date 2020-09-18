@@ -7,7 +7,7 @@ import (
 )
 
 func TestPage_Marshal_UnMarshalJSON(t *testing.T) {
-	in := NewRecordPage(&alpha{"A"}, 2, 5, 10)
+	in := NewRecordPage(2, 5)
 	in.Add(MakeRecord(keys.NewKey(6), &alpha{"F"}))
 	in.Add(MakeRecord(keys.NewKey(7), &alpha{"G"}))
 	in.Add(MakeRecord(keys.NewKey(8), &alpha{"H"}))
@@ -35,7 +35,7 @@ func TestPage_Marshal_UnMarshalJSON(t *testing.T) {
 }
 
 func TestPage_MarshalJSON(t *testing.T) {
-	in := NewRecordPage(alpha{}, 2, 5, 10)
+	in := NewRecordPage(2, 5)
 
 	act, err := json.Marshal(in)
 
@@ -44,7 +44,7 @@ func TestPage_MarshalJSON(t *testing.T) {
 		return
 	}
 
-	exp := `{"Records":null,"Number":2,"Size":5,"Limit":10}`
+	exp := `{"Records":null,"Number":2,"Size":5,"HasMore":false}`
 
 	if string(act) != exp {
 		t.Error("Expected", exp, "Got", string(act))
@@ -61,7 +61,7 @@ func TestPage_UnMarshalJSON(t *testing.T) {
 		return
 	}
 
-	exp := NewRecordPage(&alpha{"B"}, 2, 2, 4)
+	exp := NewRecordPage(2, 2)
 	exp.Add(MakeRecord(keys.NewKeyWithTime(1599470402, 4), &alpha{"C"}))
 	exp.Add(MakeRecord(keys.NewKeyWithTime(1599470402, 5), &alpha{"D"}))
 
