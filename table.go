@@ -97,9 +97,7 @@ func (t table) filter(skipCount, limit int, f hsk.Filter, rec chan<- hsk.Record)
 		}
 
 		go t.store.Read(meta.Point(), data)
-	}
 
-	for i := 0; i < limit; i++ {
 		obj := <-data
 
 		if f.Filter(obj) {
@@ -134,6 +132,7 @@ func (t table) Find(pageNo, pageSize int, filter hsk.Filter) (records.Page, erro
 	skipCount := (pageNo - 1) * pageSize
 	totalRead := skipCount + pageSize + 1
 	data := make(chan hsk.Record, totalRead)
+
 	for _, k := range t.idx.GetKeys() {
 		meta := t.idx.Get(k)
 
@@ -142,9 +141,7 @@ func (t table) Find(pageNo, pageSize int, filter hsk.Filter) (records.Page, erro
 		}
 
 		go t.store.Read(meta.Point(), data)
-	}
 
-	for {
 		rec := <-data
 		if filter.Filter(rec) {
 			if skipCount != 0 {

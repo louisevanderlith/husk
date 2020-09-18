@@ -4,6 +4,7 @@ import (
 	"github.com/louisevanderlith/husk/hsk"
 	"github.com/louisevanderlith/husk/keys"
 	"github.com/louisevanderlith/husk/tests/sample"
+	"log"
 	"testing"
 )
 
@@ -109,6 +110,7 @@ func TestFind_FindFilteredItems(t *testing.T) {
 	matchFound := false
 	for itor.MoveNext() {
 		curr := itor.Current().(hsk.Record)
+		log.Println(curr)
 		recKey := curr.GetKey()
 
 		for _, k := range []hsk.Key{ka, kb, kc} {
