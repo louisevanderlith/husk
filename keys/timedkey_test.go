@@ -48,6 +48,21 @@ func TestKey_ToJSON(t *testing.T) {
 	}
 }
 
+func TestKey_NoPtr_ToJSON(t *testing.T) {
+	k := TimeKey{}
+
+	expected, _ := k.MarshalJSON()
+	actual, err := json.Marshal(k)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(actual) != string(expected) {
+		t.Errorf("expected %s, got %s", string(expected), string(actual))
+	}
+}
+
 func TestKey_FromJSON(t *testing.T) {
 	expected := NewKey(2)
 	input, _ := expected.MarshalJSON()

@@ -99,7 +99,7 @@ func (k *TimeKey) Compare(obj interface{}) int8 {
 }
 
 //MarshalJSON will return a Key as {stamp}`{key}
-func (k *TimeKey) MarshalJSON() ([]byte, error) {
+func (k TimeKey) MarshalJSON() ([]byte, error) {
 	return json.Marshal(k.String())
 }
 
