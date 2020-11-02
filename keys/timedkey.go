@@ -65,12 +65,12 @@ func ParseKey(rawKey string) (hsk.Key, error) {
 }
 
 //String returns the string representation for a Key, also makes is easier to parse.
-func (k *TimeKey) String() string {
+func (k TimeKey) String() string {
 	return fmt.Sprintf("%d`%d", k.Stamp, k.ID)
 }
 
 //GetTimestamp returns the creation time of the record
-func (k *TimeKey) GetTimestamp() time.Time {
+func (k TimeKey) GetTimestamp() time.Time {
 	return time.Unix(k.Stamp, 0)
 }
 
